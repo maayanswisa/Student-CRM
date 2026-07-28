@@ -1,0 +1,50 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { LogOut, GraduationCap } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { navItems } from "./nav-items";
+import { logout } from "@/actions/auth";
+
+export function Sidebar() {
+  const pathname = usePathname();
+
+  return (
+    <aside className="hidden md:flex md:w-60 md:flex-col md:border-e md:bg-sidebar md:text-sidebar-foreground">
+      <div className="flex items-center gap-2 px-5 py-5">
+        <GraduationCap className="size-6 text-primary" />
+        <span className="font-semibold">CRM למורים פרטיים</span>
+      </div>
+      <nav className="flex flex-1 flex-col gap-1 px-3">
+        {navItems.map((item) => {
+          const active = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                active
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              )}
+            >
+              <item.icon className="size-4" />
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
+      <form action={logout} className="px-3 pb-5">
+        <button
+          type="submit"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        >
+          <LogOut className="size-4" />
+          התנתקות
+        </button>
+      </form>
+    </aside>
+  );
+}

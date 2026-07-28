@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CRM למורים פרטיים (Personal Tutor CRM)
 
-## Getting Started
+Next.js (App Router) + TypeScript + Tailwind + shadcn/ui, backed by Supabase (Postgres + Auth). RTL Hebrew interface, mobile-first, single-admin login.
 
-First, run the development server:
+## Setup
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. **Create a Supabase project** at [supabase.com](https://supabase.com/dashboard) (free tier is enough).
+2. **Run the schema migration**: open the SQL Editor in your Supabase project and run the contents of [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql).
+3. **Create your admin login**: in the Supabase dashboard go to Authentication → Users → Add user, and set an email + password. There is no self-serve sign-up page — this is the only account.
+4. **Set environment variables**: copy `.env.local.example` to `.env.local` (already present with placeholder values) and fill in your project's URL and anon key, found in Project Settings → API:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+   ```
+5. **Install dependencies and run**:
+   ```bash
+   npm install
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000) and log in with the user you created in step 3.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Project structure
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `src/app/(dashboard)` — the authenticated app: dashboard, students, lessons, reports, wrapped in a shared sidebar/bottom-nav shell.
+- `src/app/login` — the single login page.
+- `src/actions/` — Server Actions for all data mutations (students, lessons, auth).
+- `src/lib/supabase/` — Supabase client factories for browser, server components, and the proxy (Next.js 16's renamed `middleware`).
+- `src/lib/whatsapp.ts` — builds `wa.me` deep links for payment reminders, lesson reminders, and lesson summaries. These only pre-fill a WhatsApp message; nothing is sent automatically.
+- `src/lib/export.ts` — CSV / Excel (`.xlsx`) report generation for the Reports page.
+- `supabase/migrations/0001_init.sql` — the full `students` / `lessons` schema with RLS policies.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Notes
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Row Level Security is intentionally simple: any authenticated user (there is only one) can read/write everything. There's no per-row ownership since this is a single-admin tool, not multi-tenant.
+- Deleting a student is a soft "archive" (status change), never a hard delete, so lesson history is preserved.

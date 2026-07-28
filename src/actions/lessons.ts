@@ -1,0 +1,151 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+import { lessonSchema, type LessonFormValues } from "@/lib/validation/lesson";
+import type { PaymentMethod } from "@/types/database";
+
+function revalidateLessonPaths(studentId?: string) {
+  revalidatePath("/");
+  revalidatePath("/lessons");
+  if (studentId) revalidatePath(`/students/${studentId}`);
+}
+
+export async function createLesson(values: LessonFormValues) {
+  const parsed = lessonSchema.parse(values);
+  const supabase = await createClient();
+  const { error, data } = await supabase
+    .from("lessons")
+    .insert({
+      student_id: parsed.student_id,
+      date_time: parsed.date_time,
+      duration_minutes: parsed.duration_minutes,
+      price: parsed.price,
+      lesson_summary: parsed.lesson_summary || null,
+      status: "scheduled",
+      is_paid: false,
+    })
+    .select("id")
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  revalidateLessonPaths(parsed.student_id);
+  return data;
+}
+
+export async function updateLesson(
+  id: string,
+  studentId: string,
+  values: LessonFormValues
+) {
+  const parsed = lessonSchema.parse(values);
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("lessons")
+    .update({
+      date_time: parsed.date_time,
+      duration_minutes: parsed.duration_minutes,
+      price: parsed.price,
+      lesson_summary: parsed.lesson_summary || null,
+    })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+
+  revalidateLessonPaths(studentId);
+}
+
+export async function markLessonCompleted(id: string, studentId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("lessons")
+    .update({ status: "completed" })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+  revalidateLessonPaths(studentId);
+}
+
+export async function cancelLesson(
+  id: string,
+  studentId: string,
+  timing: "in_time" | "late"
+) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("lessons")
+    .update({ status: timing === "in_time" ? "cancelled_in_time" : "cancelled_late" })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+  revalidateLessonPaths(studentId);
+}
+
+export async function markLessonPaid(
+  id: string,
+  studentId: string,
+  paymentMethod: PaymentMethod
+) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("lessons")
+    .update({
+      is_paid: true,
+      payment_method: paymentMethod,
+      payment_date: new Date().toISOString(),
+    })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+  revalidateLessonPaths(studentId);
+}
+
+export async function markLessonUnpaid(id: string, studentId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("lessons")
+    .update({ is_paid: false, payment_method: null, payment_date: null })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+  revalidateLessonPaths(studentId);
+}
+
+export async function logCompletedLesson(params: {
+  studentId: string;
+  price: number;
+  paid: boolean;
+  paymentMethod?: PaymentMethod;
+}) {
+  const { studentId, price, paid, paymentMethod } = params;
+  const supabase = await createClient();
+  const { error } = await supabase.from("lessons").insert({
+    student_id: studentId,
+    date_time: new Date().toISOString(),
+    duration_minutes: 60,
+    price,
+    status: "completed",
+    is_paid: paid,
+    payment_method: paid ? paymentMethod ?? null : null,
+    payment_date: paid ? new Date().toISOString() : null,
+  });
+
+  if (error) throw new Error(error.message);
+  revalidateLessonPaths(studentId);
+}
+
+export async function updateLessonSummary(
+  id: string,
+  studentId: string,
+  summary: string
+) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("lessons")
+    .update({ lesson_summary: summary })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+  revalidateLessonPaths(studentId);
+}
