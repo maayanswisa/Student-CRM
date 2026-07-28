@@ -44,11 +44,16 @@ create index if not exists students_status_idx on students (status);
 alter table students enable row level security;
 alter table lessons enable row level security;
 
+-- Postgres has no "create policy if not exists", so drop-then-create
+-- keeps this migration safe to run more than once (e.g. Supabase's GitHub
+-- integration re-running it after it was first applied by hand).
+drop policy if exists "Authenticated users can manage students" on students;
 create policy "Authenticated users can manage students"
   on students for all
   using (auth.role() = 'authenticated')
   with check (auth.role() = 'authenticated');
 
+drop policy if exists "Authenticated users can manage lessons" on lessons;
 create policy "Authenticated users can manage lessons"
   on lessons for all
   using (auth.role() = 'authenticated')
