@@ -32,7 +32,18 @@ export default async function DashboardPage() {
     .flatMap((lesson) => {
       const student = studentById.get(lesson.student_id);
       return student
-        ? [{ ...lesson, student: { id: student.id, student_name: student.student_name } }]
+        ? [
+            {
+              ...lesson,
+              student: {
+                id: student.id,
+                student_name: student.student_name,
+                mother_name: student.mother_name,
+                address: student.address,
+                mother_phone: student.mother_phone,
+              },
+            },
+          ]
         : [];
     });
 
