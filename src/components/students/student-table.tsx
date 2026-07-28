@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { StudentFormDialog } from "./student-form";
 import { setStudentStatus } from "@/actions/students";
+import { copyToClipboard } from "@/lib/clipboard";
 import type { Student } from "@/types/database";
 
 const STATUS_LABEL: Record<Student["status"], string> = {
@@ -51,6 +52,15 @@ export function StudentTable({ students }: { students: Student[] }) {
   const router = useRouter();
   const [editing, setEditing] = useState<Student | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<Student | null>(null);
+
+  async function copyAddress(address: string) {
+    try {
+      await copyToClipboard(address);
+      toast.success("הכתובת הועתקה");
+    } catch {
+      toast.error("העתקת הכתובת נכשלה");
+    }
+  }
 
   async function toggleArchive(student: Student) {
     const nextStatus = student.status === "archived" ? "active" : "archived";
@@ -101,12 +111,18 @@ export function StudentTable({ students }: { students: Student[] }) {
                   כיתה {student.grade} · {student.academic_level}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">{student.school}</TableCell>
-                <TableCell
-                  dir="auto"
-                  className="hidden max-w-48 truncate lg:table-cell"
-                  title={student.address}
-                >
-                  {student.address}
+                <TableCell className="hidden max-w-48 lg:table-cell">
+                  {student.address && (
+                    <button
+                      type="button"
+                      dir="auto"
+                      title={`${student.address} (לחיצה להעתקה)`}
+                      onClick={() => copyAddress(student.address)}
+                      className="block w-full truncate rounded-sm hover:bg-muted hover:underline"
+                    >
+                      {student.address}
+                    </button>
+                  )}
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">

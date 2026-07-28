@@ -16,6 +16,7 @@ import {
 import { CheckCircle2, Wallet, XCircle, ChevronDown, MessageCircle } from "lucide-react";
 import { markLessonCompleted, cancelLesson } from "@/actions/lessons";
 import { MarkPaidDialog } from "@/components/lessons/mark-paid-dialog";
+import { copyToClipboard } from "@/lib/clipboard";
 import type { Lesson, Student } from "@/types/database";
 
 export interface TodayLessonRow extends Lesson {
@@ -48,6 +49,15 @@ export function TodaySchedule({ lessons }: { lessons: TodayLessonRow[] }) {
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "משהו השתבש");
+    }
+  }
+
+  async function copyAddress(address: string) {
+    try {
+      await copyToClipboard(address);
+      toast.success("הכתובת הועתקה");
+    } catch {
+      toast.error("העתקת הכתובת נכשלה");
     }
   }
 
@@ -95,7 +105,15 @@ export function TodaySchedule({ lessons }: { lessons: TodayLessonRow[] }) {
                   {lesson.student.address && (
                     <>
                       {" · "}
-                      <span dir="auto">{lesson.student.address}</span>
+                      <button
+                        type="button"
+                        dir="auto"
+                        title="לחיצה להעתקת הכתובת"
+                        onClick={() => copyAddress(lesson.student.address)}
+                        className="underline decoration-dotted hover:text-foreground"
+                      >
+                        {lesson.student.address}
+                      </button>
                     </>
                   )}
                 </div>
