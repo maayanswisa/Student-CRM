@@ -42,6 +42,12 @@ import {
 import { createStudent, updateStudent } from "@/actions/students";
 import type { Student } from "@/types/database";
 
+const STATUS_LABELS: Record<string, string> = {
+  active: "פעיל/ה",
+  paused: "בהפסקה",
+  archived: "בארכיון",
+};
+
 const emptyValues: StudentFormInput = {
   student_name: "",
   mother_name: "",
@@ -272,7 +278,9 @@ export function StudentFormDialog({
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger id="status">
-                      <SelectValue />
+                      <SelectValue>
+                        {(value: string) => STATUS_LABELS[value] ?? value}
+                      </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="active">פעיל/ה</SelectItem>

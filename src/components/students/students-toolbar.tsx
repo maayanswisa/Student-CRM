@@ -15,6 +15,18 @@ import {
 import { GRADES } from "@/lib/validation/student";
 import { StudentFormDialog } from "./student-form";
 
+const STATUS_LABELS: Record<string, string> = {
+  active: "פעיל/ה",
+  paused: "בהפסקה",
+  archived: "בארכיון",
+  all: "הכל",
+};
+
+const GRADE_LABELS: Record<string, string> = {
+  all: "כל הכיתות",
+  ...Object.fromEntries(GRADES.map((g) => [g, `כיתה ${g}`])),
+};
+
 export function StudentsToolbar() {
   const router = useRouter();
   const pathname = usePathname();
@@ -55,7 +67,9 @@ export function StudentsToolbar() {
           onValueChange={(v) => setParam("status", v)}
         >
           <SelectTrigger className="sm:w-40">
-            <SelectValue placeholder="סטטוס" />
+            <SelectValue placeholder="סטטוס">
+              {(value: string) => STATUS_LABELS[value] ?? value}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="active">פעיל/ה</SelectItem>
@@ -69,7 +83,9 @@ export function StudentsToolbar() {
           onValueChange={(v) => setParam("grade", v)}
         >
           <SelectTrigger className="sm:w-32">
-            <SelectValue placeholder="כיתה" />
+            <SelectValue placeholder="כיתה">
+              {(value: string) => GRADE_LABELS[value] ?? value}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">כל הכיתות</SelectItem>

@@ -82,6 +82,7 @@ export function StudentTable({ students }: { students: Student[] }) {
               <TableHead>תלמיד/ה</TableHead>
               <TableHead className="hidden md:table-cell">כיתה / רמה</TableHead>
               <TableHead className="hidden md:table-cell">בית ספר</TableHead>
+              <TableHead className="hidden lg:table-cell">כתובת</TableHead>
               <TableHead>יצירת קשר</TableHead>
               <TableHead>סטטוס</TableHead>
               <TableHead className="w-10" />
@@ -100,8 +101,17 @@ export function StudentTable({ students }: { students: Student[] }) {
                   כיתה {student.grade} · {student.academic_level}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">{student.school}</TableCell>
+                <TableCell
+                  className="hidden max-w-48 truncate lg:table-cell"
+                  title={student.address}
+                >
+                  {student.address}
+                </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="whitespace-nowrap text-sm text-muted-foreground">
+                      {student.mother_phone}
+                    </span>
                     <Button
                       variant="ghost"
                       size="icon"
