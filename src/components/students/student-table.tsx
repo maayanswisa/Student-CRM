@@ -103,7 +103,7 @@ export function StudentTable({ students }: { students: Student[] }) {
                 <TableCell className="hidden md:table-cell">{student.school}</TableCell>
                 <TableCell
                   dir="auto"
-                  className="hidden max-w-48 truncate text-end lg:table-cell"
+                  className="hidden max-w-48 truncate lg:table-cell"
                   title={student.address}
                 >
                   {student.address}
