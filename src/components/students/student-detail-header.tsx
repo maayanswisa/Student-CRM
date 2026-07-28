@@ -58,6 +58,7 @@ export function StudentDetailHeader({
               <Button
                 variant="ghost"
                 size="icon"
+                nativeButton={false}
                 render={
                   <a href={`tel:${student.mother_phone}`}>
                     <Phone className="size-4" />
@@ -67,6 +68,7 @@ export function StudentDetailHeader({
               <Button
                 variant="ghost"
                 size="icon"
+                nativeButton={false}
                 render={
                   <a href={waLink(student.mother_phone)} target="_blank" rel="noreferrer">
                     <MessageCircle className="size-4" />
@@ -86,6 +88,7 @@ export function StudentDetailHeader({
                 <Button
                   variant="ghost"
                   size="icon"
+                  nativeButton={false}
                   render={
                     <a href={`tel:${student.student_phone}`}>
                       <Phone className="size-4" />
@@ -95,6 +98,7 @@ export function StudentDetailHeader({
                 <Button
                   variant="ghost"
                   size="icon"
+                  nativeButton={false}
                   render={
                     <a href={waLink(student.student_phone)} target="_blank" rel="noreferrer">
                       <MessageCircle className="size-4" />
@@ -130,6 +134,7 @@ export function StudentDetailHeader({
           {debt.totalOwed > 0 && (
             <Button
               variant="secondary"
+              nativeButton={false}
               render={
                 <a
                   href={buildPaymentReminderLink({

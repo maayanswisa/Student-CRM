@@ -106,6 +106,7 @@ export function StudentTable({ students }: { students: Student[] }) {
                       variant="ghost"
                       size="icon"
                       className="size-8"
+                      nativeButton={false}
                       render={
                         <a href={`tel:${student.mother_phone}`} aria-label="חיוג">
                           <Phone className="size-4" />
@@ -116,6 +117,7 @@ export function StudentTable({ students }: { students: Student[] }) {
                       variant="ghost"
                       size="icon"
                       className="size-8"
+                      nativeButton={false}
                       render={
                         <a
                           href={`https://wa.me/${student.mother_phone.replace(/\D/g, "").replace(/^0/, "972")}`}

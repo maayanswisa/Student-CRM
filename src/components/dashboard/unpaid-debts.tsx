@@ -42,6 +42,7 @@ export function UnpaidDebtsList({ debts }: { debts: StudentDebtRow[] }) {
               <Button
                 size="sm"
                 variant="secondary"
+                nativeButton={false}
                 render={
                   <a
                     href={buildPaymentReminderLink({
