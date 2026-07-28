@@ -31,5 +31,22 @@ Next.js (App Router) + TypeScript + Tailwind + shadcn/ui, backed by Supabase (Po
 
 ## Notes
 
-- Row Level Security is intentionally simple: any authenticated user (there is only one) can read/write everything. There's no per-row ownership since this is a single-admin tool, not multi-tenant.
+- Row Level Security is intentionally simple: any authenticated user (there is only one) can read/write everything. There's no per-row ownership since this is a single-admin tool, not multi-tenant. There is also no separate "admin" flag anywhere — whichever user you create in Authentication → Users is the one account this app trusts.
 - Deleting a student is a soft "archive" (status change), never a hard delete, so lesson history is preserved.
+- When creating your user in Authentication → Users, check **Auto Confirm User** (or confirm the email link Supabase sends). An unconfirmed user cannot sign in.
+
+## Troubleshooting
+
+**Login fails with "fetch failed" instead of a real error, or `git push`/`fetch` fail with a certificate error.**
+
+This happens when antivirus software (seen with AVG's "Web/Mail Shield") intercepts outbound HTTPS traffic and re-signs it with its own root certificate, which Node/Git don't trust out of the box.
+
+- For `git`: run `git -c http.sslBackend=schannel <command>` (e.g. `push`/`pull`/`fetch`) — this tells Git to check Windows' own certificate store instead of its bundled one.
+- For `npm run dev` / the app itself: export the interfering root certificate from Windows into `certs/avg-root.pem` (gitignored, machine-specific):
+  ```powershell
+  $cert = Get-ChildItem Cert:\LocalMachine\Root | Where-Object { $_.Subject -match "AVG" } | Select-Object -First 1
+  New-Item -ItemType Directory -Force -Path certs | Out-Null
+  $b64 = [Convert]::ToBase64String($cert.RawData, [Base64FormattingOptions]::InsertLineBreaks)
+  "-----BEGIN CERTIFICATE-----`n$b64`n-----END CERTIFICATE-----" | Set-Content -Path certs\avg-root.pem -Encoding ascii
+  ```
+  Swap `"AVG"` for whatever security product's root cert shows up under `Cert:\LocalMachine\Root` if it's a different vendor. The `dev` script already points Node at `./certs/avg-root.pem` via `NODE_EXTRA_CA_CERTS` (set through `cross-env` in `package.json`, **not** `.env.local` — Node reads that variable at process boot, before `.env.local` is ever loaded, so setting it there has no effect). On a machine without this file, the flag is simply ignored.

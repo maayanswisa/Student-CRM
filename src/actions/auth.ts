@@ -25,7 +25,13 @@ export async function login(
   });
 
   if (error) {
-    return { error: "פרטי התחברות שגויים" };
+    if (error.code === "invalid_credentials") {
+      return { error: "פרטי התחברות שגויים" };
+    }
+    if (error.code === "email_not_confirmed") {
+      return { error: "המייל טרם אושר - יש לאשר את המשתמש בלוח הבקרה של Supabase" };
+    }
+    return { error: `שגיאה: ${error.message}` };
   }
 
   redirect("/");
