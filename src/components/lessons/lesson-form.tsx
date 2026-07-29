@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -49,19 +49,23 @@ export function LessonFormDialog({
 }) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const values = useMemo(
+    () => ({
+      student_id: studentId,
+      date_time: toDateTimeLocal(lesson?.date_time),
+      duration_minutes: lesson?.duration_minutes ?? 60,
+      price: lesson?.price ?? hourlyRate,
+      lesson_summary: lesson?.lesson_summary ?? "",
+    }),
+    [studentId, lesson, hourlyRate]
+  );
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<LessonFormInput, unknown, LessonFormValues>({
     resolver: zodResolver(lessonSchema),
-    values: {
-      student_id: studentId,
-      date_time: toDateTimeLocal(lesson?.date_time),
-      duration_minutes: lesson?.duration_minutes ?? 60,
-      price: lesson?.price ?? hourlyRate,
-      lesson_summary: lesson?.lesson_summary ?? "",
-    },
+    values,
   });
 
   async function onSubmit(values: LessonFormValues) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -95,6 +95,10 @@ export function StudentFormDialog({
 }) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const values = useMemo(
+    () => (student ? studentToValues(student) : emptyValues),
+    [student]
+  );
   const {
     register,
     handleSubmit,
@@ -103,7 +107,7 @@ export function StudentFormDialog({
     formState: { errors },
   } = useForm<StudentFormInput, unknown, StudentFormValues>({
     resolver: zodResolver(studentSchema),
-    values: student ? studentToValues(student) : emptyValues,
+    values,
   });
 
   async function onSubmit(values: StudentFormValues) {
