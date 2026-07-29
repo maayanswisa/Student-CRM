@@ -150,24 +150,24 @@ export function StudentFormDialog({
                 {errors.student_name && <FieldError>{errors.student_name.message}</FieldError>}
               </Field>
               <Field>
-                <FieldLabel htmlFor="mother_name">שם ההורה (לא חובה)</FieldLabel>
+                <FieldLabel htmlFor="mother_name">שם ההורה</FieldLabel>
                 <Input id="mother_name" {...register("mother_name")} />
               </Field>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <Field>
-                <FieldLabel htmlFor="student_phone">טלפון התלמיד/ה (לא חובה)</FieldLabel>
+                <FieldLabel htmlFor="student_phone">טלפון התלמיד/ה</FieldLabel>
                 <Input id="student_phone" {...register("student_phone")} />
               </Field>
               <Field>
-                <FieldLabel htmlFor="mother_phone">טלפון ההורה (לא חובה)</FieldLabel>
+                <FieldLabel htmlFor="mother_phone">טלפון ההורה</FieldLabel>
                 <Input id="mother_phone" {...register("mother_phone")} />
               </Field>
             </div>
 
             <Field>
-              <FieldLabel htmlFor="address">כתובת (לא חובה)</FieldLabel>
+              <FieldLabel htmlFor="address">כתובת</FieldLabel>
               <Input id="address" {...register("address")} />
             </Field>
 
@@ -218,7 +218,7 @@ export function StudentFormDialog({
 
             <div className="grid grid-cols-2 gap-3">
               <Field>
-                <FieldLabel htmlFor="school">בית ספר (לא חובה)</FieldLabel>
+                <FieldLabel htmlFor="school">בית ספר</FieldLabel>
                 <Input id="school" {...register("school")} />
               </Field>
               <Field>

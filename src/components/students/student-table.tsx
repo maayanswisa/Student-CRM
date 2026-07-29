@@ -32,6 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { StudentFormDialog } from "./student-form";
+import { StudentAvatar } from "./student-avatar";
 import { setStudentStatus } from "@/actions/students";
 import { copyToClipboard } from "@/lib/clipboard";
 import type { Student } from "@/types/database";
@@ -102,10 +103,15 @@ export function StudentTable({ students }: { students: Student[] }) {
             {students.map((student) => (
               <TableRow key={student.id}>
                 <TableCell className="font-medium">
-                  <Link href={`/students/${student.id}`} className="hover:underline">
-                    {student.student_name}
-                  </Link>
-                  <div className="text-xs text-muted-foreground">{student.mother_name}</div>
+                  <div className="flex items-center justify-center gap-2">
+                    <StudentAvatar name={student.student_name} size="sm" />
+                    <div>
+                      <Link href={`/students/${student.id}`} className="hover:underline">
+                        {student.student_name}
+                      </Link>
+                      <div className="text-xs text-muted-foreground">{student.mother_name}</div>
+                    </div>
+                  </div>
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   כיתה {student.grade} · {student.academic_level}

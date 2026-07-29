@@ -20,11 +20,23 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreVertical, CheckCircle2, XCircle, Wallet, Pencil } from "lucide-react";
-import { markLessonCompleted, cancelLesson } from "@/actions/lessons";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { MoreVertical, CheckCircle2, XCircle, Wallet, Pencil, Trash2 } from "lucide-react";
+import { markLessonCompleted, cancelLesson, deleteLesson } from "@/actions/lessons";
 import { MarkPaidDialog } from "./mark-paid-dialog";
 import { LessonFormDialog } from "./lesson-form";
 import { PAYMENT_METHOD_LABELS } from "@/lib/validation/student";
+import { lessonStatusRowClass } from "@/lib/lesson-style";
+import { cn } from "@/lib/utils";
 import type { Lesson, LessonStatus, Student } from "@/types/database";
 
 export interface LessonRow extends Lesson {
@@ -49,6 +61,7 @@ export function AllLessonsTable({ title, lessons }: { title: string; lessons: Le
   const router = useRouter();
   const [payingLessonId, setPayingLessonId] = useState<string | null>(null);
   const [editingLesson, setEditingLesson] = useState<LessonRow | null>(null);
+  const [deletingLesson, setDeletingLesson] = useState<LessonRow | null>(null);
   const payingLesson = lessons.find((l) => l.id === payingLessonId);
 
   async function complete(lesson: LessonRow) {
@@ -71,6 +84,18 @@ export function AllLessonsTable({ title, lessons }: { title: string; lessons: Le
     }
   }
 
+  async function remove(lesson: LessonRow) {
+    try {
+      await deleteLesson(lesson.id, lesson.student_id);
+      toast.success("השיעור נמחק");
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "משהו השתבש");
+    } finally {
+      setDeletingLesson(null);
+    }
+  }
+
   if (lessons.length === 0) return null;
 
   return (
@@ -89,7 +114,7 @@ export function AllLessonsTable({ title, lessons }: { title: string; lessons: Le
           </TableHeader>
           <TableBody>
             {lessons.map((lesson) => (
-              <TableRow key={lesson.id}>
+              <TableRow key={lesson.id} className={cn(lessonStatusRowClass(lesson.status))}>
                 <TableCell>
                   <Link href={`/students/${lesson.student.id}`} className="font-medium hover:underline">
                     {lesson.student.student_name}
@@ -150,6 +175,13 @@ export function AllLessonsTable({ title, lessons }: { title: string; lessons: Le
                           ביטול באיחור
                         </DropdownMenuItem>
                       )}
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onClick={() => setDeletingLesson(lesson)}
+                      >
+                        <Trash2 className="size-4" />
+                        מחיקת שיעור
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -158,6 +190,23 @@ export function AllLessonsTable({ title, lessons }: { title: string; lessons: Le
           </TableBody>
         </Table>
       </div>
+
+      <AlertDialog open={!!deletingLesson} onOpenChange={(open) => !open && setDeletingLesson(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>למחוק את השיעור?</AlertDialogTitle>
+            <AlertDialogDescription>
+              הפעולה בלתי הפיכה - השיעור יימחק לצמיתות מההיסטוריה.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deletingLesson && remove(deletingLesson)}>
+              מחיקה
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {payingLesson && (
         <MarkPaidDialog

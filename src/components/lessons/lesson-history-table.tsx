@@ -20,15 +20,28 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreVertical, CheckCircle2, XCircle, Pencil } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { MoreVertical, CheckCircle2, XCircle, Pencil, Trash2 } from "lucide-react";
 import {
   markLessonCompleted,
   markLessonUnpaid,
   cancelLesson,
+  deleteLesson,
 } from "@/actions/lessons";
 import { MarkPaidDialog } from "./mark-paid-dialog";
 import { LessonFormDialog } from "./lesson-form";
 import { PAYMENT_METHOD_LABELS } from "@/lib/validation/student";
+import { lessonStatusRowClass } from "@/lib/lesson-style";
+import { cn } from "@/lib/utils";
 import type { Lesson, LessonStatus } from "@/types/database";
 
 const STATUS_LABEL: Record<LessonStatus, string> = {
@@ -59,6 +72,7 @@ export function LessonHistoryTable({
   const router = useRouter();
   const [payingLessonId, setPayingLessonId] = useState<string | null>(null);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
+  const [deletingLesson, setDeletingLesson] = useState<Lesson | null>(null);
 
   async function togglePaid(lesson: Lesson) {
     if (lesson.is_paid) {
@@ -93,6 +107,18 @@ export function LessonHistoryTable({
     }
   }
 
+  async function remove(lesson: Lesson) {
+    try {
+      await deleteLesson(lesson.id, studentId);
+      toast.success("השיעור נמחק");
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "משהו השתבש");
+    } finally {
+      setDeletingLesson(null);
+    }
+  }
+
   if (lessons.length === 0) {
     return (
       <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
@@ -116,7 +142,7 @@ export function LessonHistoryTable({
           </TableHeader>
           <TableBody>
             {lessons.map((lesson) => (
-              <TableRow key={lesson.id}>
+              <TableRow key={lesson.id} className={cn(lessonStatusRowClass(lesson.status))}>
                 <TableCell>
                   {new Date(lesson.date_time).toLocaleString("he-IL", {
                     dateStyle: "short",
@@ -175,6 +201,13 @@ export function LessonHistoryTable({
                           ביטול באיחור
                         </DropdownMenuItem>
                       )}
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onClick={() => setDeletingLesson(lesson)}
+                      >
+                        <Trash2 className="size-4" />
+                        מחיקת שיעור
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -183,6 +216,23 @@ export function LessonHistoryTable({
           </TableBody>
         </Table>
       </div>
+
+      <AlertDialog open={!!deletingLesson} onOpenChange={(open) => !open && setDeletingLesson(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>למחוק את השיעור?</AlertDialogTitle>
+            <AlertDialogDescription>
+              הפעולה בלתי הפיכה - השיעור יימחק לצמיתות מההיסטוריה.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deletingLesson && remove(deletingLesson)}>
+              מחיקה
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {payingLessonId && (
         <MarkPaidDialog

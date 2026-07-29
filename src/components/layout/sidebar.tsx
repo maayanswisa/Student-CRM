@@ -6,15 +6,19 @@ import { LogOut, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { navItems } from "./nav-items";
 import { logout } from "@/actions/auth";
+import { ThemeToggle } from "./theme-toggle";
 
 export function Sidebar() {
   const pathname = usePathname();
 
   return (
     <aside className="hidden md:flex md:w-60 md:flex-col md:border-e md:bg-sidebar md:text-sidebar-foreground">
-      <div className="flex items-center gap-2 px-5 py-5">
-        <GraduationCap className="size-6 text-primary" />
-        <span className="font-semibold">CRM למורים פרטיים</span>
+      <div className="flex items-center justify-between gap-2 px-5 py-5">
+        <div className="flex items-center gap-2">
+          <GraduationCap className="size-6 text-primary" />
+          <span className="font-semibold">CRM למורים פרטיים</span>
+        </div>
+        <ThemeToggle />
       </div>
       <nav className="flex flex-1 flex-col gap-1 px-3">
         {navItems.map((item) => {

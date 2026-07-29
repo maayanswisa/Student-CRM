@@ -8,6 +8,7 @@ import type { PaymentMethod } from "@/types/database";
 function revalidateLessonPaths(studentId?: string) {
   revalidatePath("/");
   revalidatePath("/lessons");
+  revalidatePath("/schedule");
   if (studentId) revalidatePath(`/students/${studentId}`);
 }
 
@@ -112,6 +113,14 @@ export async function markLessonUnpaid(id: string, studentId: string) {
   revalidateLessonPaths(studentId);
 }
 
+export async function deleteLesson(id: string, studentId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("lessons").delete().eq("id", id);
+
+  if (error) throw new Error(error.message);
+  revalidateLessonPaths(studentId);
+}
+
 export async function logCompletedLesson(params: {
   studentId: string;
   price: number;
@@ -133,6 +142,48 @@ export async function logCompletedLesson(params: {
 
   if (error) throw new Error(error.message);
   revalidateLessonPaths(studentId);
+}
+
+export async function ensureLessonForDate(
+  studentId: string,
+  dateIso: string,
+  price: number
+): Promise<string> {
+  const supabase = await createClient();
+  const day = new Date(dateIso);
+  const dayStart = new Date(day);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(day);
+  dayEnd.setHours(23, 59, 59, 999);
+
+  const { data: existing } = await supabase
+    .from("lessons")
+    .select("id")
+    .eq("student_id", studentId)
+    .gte("date_time", dayStart.toISOString())
+    .lte("date_time", dayEnd.toISOString())
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) return existing.id;
+
+  const { data, error } = await supabase
+    .from("lessons")
+    .insert({
+      student_id: studentId,
+      date_time: dateIso,
+      duration_minutes: 60,
+      price,
+      status: "scheduled",
+      is_paid: false,
+    })
+    .select("id")
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  revalidateLessonPaths(studentId);
+  return data.id;
 }
 
 export async function updateLessonSummary(

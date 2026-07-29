@@ -18,6 +18,8 @@ import { markLessonCompleted, cancelLesson } from "@/actions/lessons";
 import { MarkPaidDialog } from "@/components/lessons/mark-paid-dialog";
 import { LessonFormDialog } from "@/components/lessons/lesson-form";
 import { copyToClipboard } from "@/lib/clipboard";
+import { lessonStatusRowClass } from "@/lib/lesson-style";
+import { cn } from "@/lib/utils";
 import type { Lesson, Student } from "@/types/database";
 
 export interface TodayLessonRow extends Lesson {
@@ -87,7 +89,10 @@ export function TodaySchedule({ lessons }: { lessons: TodayLessonRow[] }) {
         {lessons.map((lesson) => (
           <div
             key={lesson.id}
-            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3"
+            className={cn(
+              "flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3",
+              lessonStatusRowClass(lesson.status)
+            )}
           >
             <div className="flex items-start gap-2">
               <div>

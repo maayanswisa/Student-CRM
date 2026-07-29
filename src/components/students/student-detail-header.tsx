@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Phone, MessageCircle, Plus, CalendarClock } from "lucide-react";
+import { Phone, MessageCircle, Plus, CalendarClock, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { LessonFormDialog } from "@/components/lessons/lesson-form";
+import { StudentFormDialog } from "@/components/students/student-form";
+import { StudentAvatar } from "@/components/students/student-avatar";
 import { buildPaymentReminderLink } from "@/lib/whatsapp";
 import type { Student } from "@/types/database";
 import type { StudentDebt } from "@/lib/debt";
@@ -28,24 +30,34 @@ export function StudentDetailHeader({
   debt: StudentDebt;
 }) {
   const [scheduling, setScheduling] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   return (
     <Card>
       <CardContent className="flex flex-col gap-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-semibold">{student.student_name}</h1>
-              <Badge variant="outline">{STATUS_LABEL[student.status]}</Badge>
+          <div className="flex items-center gap-3">
+            <StudentAvatar name={student.student_name} size="lg" />
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-semibold">{student.student_name}</h1>
+                <Badge variant="outline">{STATUS_LABEL[student.status]}</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                כיתה {student.grade} · {student.academic_level} · {student.school}
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground">
-              כיתה {student.grade} · {student.academic_level} · {student.school}
-            </p>
           </div>
-          <Button onClick={() => setScheduling(true)}>
-            <Plus className="size-4" />
-            קביעת שיעור
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setEditing(true)}>
+              <Pencil className="size-4" />
+              עריכה
+            </Button>
+            <Button onClick={() => setScheduling(true)}>
+              <Plus className="size-4" />
+              קביעת שיעור
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -162,6 +174,8 @@ export function StudentDetailHeader({
         open={scheduling}
         onOpenChange={setScheduling}
       />
+
+      <StudentFormDialog student={student} open={editing} onOpenChange={setEditing} />
     </Card>
   );
 }
