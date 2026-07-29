@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Plus, Search } from "lucide-react";
+import { Plus, Search, Upload } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { GRADES } from "@/lib/validation/student";
 import { StudentFormDialog } from "./student-form";
+import { StudentImportDialog } from "./student-import-dialog";
 
 const STATUS_LABELS: Record<string, string> = {
   active: "פעיל/ה",
@@ -34,10 +35,11 @@ export function StudentsToolbar() {
   const [, startTransition] = useTransition();
   const [search, setSearch] = useState(searchParams.get("q") ?? "");
   const [createOpen, setCreateOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   function setParam(key: string, value: string | null) {
     const params = new URLSearchParams(searchParams.toString());
-    if (value && value !== "all") {
+    if (value) {
       params.set(key, value);
     } else {
       params.delete(key);
@@ -97,11 +99,18 @@ export function StudentsToolbar() {
           </SelectContent>
         </Select>
       </div>
-      <Button onClick={() => setCreateOpen(true)}>
-        <Plus className="size-4" />
-        תלמיד/ה חדש/ה
-      </Button>
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={() => setImportOpen(true)}>
+          <Upload className="size-4" />
+          ייבוא תלמידים
+        </Button>
+        <Button onClick={() => setCreateOpen(true)}>
+          <Plus className="size-4" />
+          תלמיד/ה חדש/ה
+        </Button>
+      </div>
       <StudentFormDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <StudentImportDialog open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 }

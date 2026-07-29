@@ -2,10 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { studentSchema, type StudentFormValues } from "@/lib/validation/student";
+import {
+  studentSchema,
+  type StudentFormValues,
+  type StudentFormInput,
+} from "@/lib/validation/student";
 import type { StudentStatus } from "@/types/database";
 
-function toRow(values: StudentFormValues) {
+function toRow(values: StudentFormInput) {
   const parsed = studentSchema.parse(values);
   return {
     student_name: parsed.student_name,
@@ -23,6 +27,32 @@ function toRow(values: StudentFormValues) {
     notes: parsed.notes || null,
     upcoming_exam_date: parsed.upcoming_exam_date || null,
   };
+}
+
+export async function bulkCreateStudents(rows: StudentFormInput[]) {
+  const validRows: ReturnType<typeof toRow>[] = [];
+  let skipped = 0;
+
+  for (const row of rows) {
+    try {
+      validRows.push(toRow(row));
+    } catch {
+      skipped += 1;
+    }
+  }
+
+  if (validRows.length === 0) {
+    return { inserted: 0, skipped };
+  }
+
+  const supabase = await createClient();
+  const { error, data } = await supabase.from("students").insert(validRows).select("id");
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/students");
+  revalidatePath("/");
+  return { inserted: data?.length ?? 0, skipped };
 }
 
 export async function createStudent(values: StudentFormValues) {
