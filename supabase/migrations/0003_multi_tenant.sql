@@ -30,13 +30,17 @@ create index if not exists students_teacher_id_idx on students (teacher_id);
 create index if not exists lessons_teacher_id_idx on lessons (teacher_id);
 
 -- 4. Replace the single-admin RLS policies with per-teacher isolation.
+-- (drop both the old and new policy names first so this file is safe to
+-- run more than once.)
 drop policy if exists "Authenticated users can manage students" on students;
+drop policy if exists "Teachers manage their own students" on students;
 create policy "Teachers manage their own students"
   on students for all
   using (teacher_id = auth.uid())
   with check (teacher_id = auth.uid());
 
 drop policy if exists "Authenticated users can manage lessons" on lessons;
+drop policy if exists "Teachers manage their own lessons" on lessons;
 create policy "Teachers manage their own lessons"
   on lessons for all
   using (teacher_id = auth.uid())
