@@ -25,7 +25,15 @@ export function LoginForm() {
           <Input id="email" name="email" type="email" autoComplete="username" required />
         </Field>
         <Field>
-          <FieldLabel htmlFor="password">סיסמה</FieldLabel>
+          <div className="flex items-center justify-between">
+            <FieldLabel htmlFor="password">סיסמה</FieldLabel>
+            <Link
+              href="/forgot-password"
+              className="text-sm text-primary hover:underline"
+            >
+              שכחת סיסמה?
+            </Link>
+          </div>
           <Input
             id="password"
             name="password"
