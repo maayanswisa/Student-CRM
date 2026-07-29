@@ -50,6 +50,17 @@ export type LessonWithStudent = Lesson & {
   >;
 };
 
+export type ExamScore = {
+  id: string;
+  created_at: string;
+  teacher_id: string;
+  student_id: string;
+  exam_date: string;
+  subject: string;
+  score: number;
+  notes: string | null;
+};
+
 // Note: every type here (Student, Lesson, Database, and each table's
 // Row/Insert/Update) must be a `type` alias, not an `interface`. Supabase's
 // client resolves table types through several layers of nested generic
@@ -122,6 +133,26 @@ export type Database = {
           payment_method?: PaymentMethod | null;
           payment_date?: string | null;
           lesson_summary?: string | null;
+        };
+        Relationships: [];
+      };
+      exam_scores: {
+        Row: ExamScore;
+        Insert: {
+          teacher_id?: string;
+          student_id: string;
+          exam_date: string;
+          subject: string;
+          score: number;
+          notes?: string | null;
+        };
+        Update: {
+          teacher_id?: string;
+          student_id?: string;
+          exam_date?: string;
+          subject?: string;
+          score?: number;
+          notes?: string | null;
         };
         Relationships: [];
       };

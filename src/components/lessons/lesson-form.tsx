@@ -37,6 +37,7 @@ export function LessonFormDialog({
   studentName,
   hourlyRate,
   lesson,
+  defaultDateTime,
   open,
   onOpenChange,
 }: {
@@ -44,6 +45,7 @@ export function LessonFormDialog({
   studentName: string;
   hourlyRate: number;
   lesson?: Lesson;
+  defaultDateTime?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -52,12 +54,12 @@ export function LessonFormDialog({
   const values = useMemo(
     () => ({
       student_id: studentId,
-      date_time: toDateTimeLocal(lesson?.date_time),
+      date_time: toDateTimeLocal(lesson?.date_time ?? defaultDateTime),
       duration_minutes: lesson?.duration_minutes ?? 60,
       price: lesson?.price ?? hourlyRate,
       lesson_summary: lesson?.lesson_summary ?? "",
     }),
-    [studentId, lesson, hourlyRate]
+    [studentId, lesson, hourlyRate, defaultDateTime]
   );
   const {
     register,

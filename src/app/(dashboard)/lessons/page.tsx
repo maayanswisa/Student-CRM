@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { NewLessonButton } from "@/components/lessons/new-lesson-button";
+import { LessonsExportButton } from "@/components/lessons/lessons-export-button";
 import { AllLessonsTable, type LessonRow } from "@/components/lessons/all-lessons-table";
 import type { Lesson, Student } from "@/types/database";
 
@@ -36,7 +37,10 @@ export default async function LessonsPage() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">שיעורים</h1>
-        <NewLessonButton students={activeStudents} />
+        <div className="flex gap-2">
+          <LessonsExportButton />
+          <NewLessonButton students={activeStudents} />
+        </div>
       </div>
       <AllLessonsTable title="שיעורים מתוכננים" lessons={upcoming} />
       <AllLessonsTable title="היסטוריה" lessons={history} />

@@ -1,15 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Phone, MessageCircle, Plus, CalendarClock, Pencil } from "lucide-react";
+import { Phone, MessageCircle, Plus, CalendarClock, Pencil, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { LessonFormDialog } from "@/components/lessons/lesson-form";
 import { StudentFormDialog } from "@/components/students/student-form";
 import { StudentAvatar } from "@/components/students/student-avatar";
+import { MonthlyStatementDialog } from "@/components/students/monthly-statement-dialog";
 import { buildPaymentReminderLink } from "@/lib/whatsapp";
-import type { Student } from "@/types/database";
+import type { Student, Lesson } from "@/types/database";
 import type { StudentDebt } from "@/lib/debt";
 
 const STATUS_LABEL: Record<Student["status"], string> = {
@@ -25,12 +26,15 @@ function waLink(phone: string) {
 export function StudentDetailHeader({
   student,
   debt,
+  lessons,
 }: {
   student: Student;
   debt: StudentDebt;
+  lessons: Lesson[];
 }) {
   const [scheduling, setScheduling] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [statementOpen, setStatementOpen] = useState(false);
 
   return (
     <Card>
@@ -143,29 +147,44 @@ export function StudentDetailHeader({
             <p className="text-lg font-semibold">{debt.totalOwed.toFixed(2)} ₪</p>
             <p className="text-xs text-muted-foreground">{debt.unpaidCount} שיעורים שלא שולמו</p>
           </div>
-          {debt.totalOwed > 0 && (
-            <Button
-              variant="secondary"
-              nativeButton={false}
-              render={
-                <a
-                  href={buildPaymentReminderLink({
-                    phone: student.mother_phone,
-                    studentName: student.student_name,
-                    unpaidCount: debt.unpaidCount,
-                    totalOwed: debt.totalOwed,
-                  })}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <MessageCircle className="size-4" />
-                  שליחת תזכורת תשלום
-                </a>
-              }
-            />
-          )}
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setStatementOpen(true)}>
+              <FileText className="size-4" />
+              הפקת דוח חודשי
+            </Button>
+            {debt.totalOwed > 0 && (
+              <Button
+                variant="secondary"
+                nativeButton={false}
+                render={
+                  <a
+                    href={buildPaymentReminderLink({
+                      phone: student.mother_phone,
+                      studentName: student.student_name,
+                      unpaidCount: debt.unpaidCount,
+                      totalOwed: debt.totalOwed,
+                    })}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <MessageCircle className="size-4" />
+                    שליחת תזכורת תשלום
+                  </a>
+                }
+              />
+            )}
+          </div>
         </div>
       </CardContent>
+
+      <MonthlyStatementDialog
+        studentName={student.student_name}
+        motherPhone={student.mother_phone}
+        lessons={lessons}
+        totalOwed={debt.totalOwed}
+        open={statementOpen}
+        onOpenChange={setStatementOpen}
+      />
 
       <LessonFormDialog
         studentId={student.id}

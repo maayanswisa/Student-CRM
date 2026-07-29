@@ -7,6 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Download, FileSpreadsheet } from "lucide-react";
 import { getMonthlyReport, type ReportRow } from "@/actions/reports";
 import { buildCsv, buildXlsxBlob, downloadBlob } from "@/lib/export";
+import { PAYMENT_METHOD_LABELS } from "@/lib/validation/student";
+import { LESSON_STATUS_LABELS } from "@/lib/validation/lesson";
+
+function toDisplayRows(rows: ReportRow[]) {
+  return rows.map((row) => ({
+    תאריך: new Date(row.date).toLocaleDateString("he-IL"),
+    "תלמיד/ה": row.studentName,
+    "מחיר (ש\"ח)": row.price,
+    סטטוס: LESSON_STATUS_LABELS[row.status] ?? row.status,
+    שולם: row.isPaid ? "כן" : "לא",
+    "אמצעי תשלום": row.paymentMethod ? PAYMENT_METHOD_LABELS[row.paymentMethod] ?? "" : "",
+  }));
+}
 
 function currentMonth(): string {
   const now = new Date();
@@ -29,12 +42,12 @@ export function ReportsClient() {
   const totalUnpaid = rows.filter((r) => !r.isPaid && r.status === "completed").reduce((s, r) => s + r.price, 0);
 
   function exportCsv() {
-    const csv = buildCsv(rows);
+    const csv = buildCsv(toDisplayRows(rows));
     downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), `דוח-${month}.csv`);
   }
 
   function exportXlsx() {
-    const blob = buildXlsxBlob(rows);
+    const blob = buildXlsxBlob(toDisplayRows(rows), "דוח חודשי");
     downloadBlob(blob, `דוח-${month}.xlsx`);
   }
 

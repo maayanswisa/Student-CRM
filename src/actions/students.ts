@@ -9,6 +9,47 @@ import {
 } from "@/lib/validation/student";
 import type { StudentStatus } from "@/types/database";
 
+const STATUS_LABELS: Record<StudentStatus, string> = {
+  active: "פעיל/ה",
+  paused: "בהפסקה",
+  archived: "בארכיון",
+};
+
+export async function getStudentsExportRows() {
+  const supabase = await createClient();
+  const [{ data: students }, { data: lessons }] = await Promise.all([
+    supabase.from("students").select("*").order("student_name"),
+    supabase.from("lessons").select("student_id, status, is_paid, price"),
+  ]);
+
+  const debtByStudent = new Map<string, number>();
+  for (const lesson of lessons ?? []) {
+    if (lesson.status === "completed" && !lesson.is_paid) {
+      debtByStudent.set(
+        lesson.student_id,
+        (debtByStudent.get(lesson.student_id) ?? 0) + Number(lesson.price)
+      );
+    }
+  }
+
+  return (students ?? []).map((s) => ({
+    "שם התלמיד/ה": s.student_name,
+    "שם ההורה": s.mother_name,
+    "טלפון ההורה": s.mother_phone,
+    "טלפון התלמיד/ה": s.student_phone ?? "",
+    כתובת: s.address,
+    כיתה: s.grade,
+    "רמת לימוד": s.academic_level,
+    "בית ספר": s.school,
+    "מחיר לשיעור (ש\"ח)": s.hourly_rate,
+    "ימי לימוד מועדפים": s.preferred_learning_day.join(", "),
+    "שעה מועדפת": s.preferred_learning_time ?? "",
+    סטטוס: STATUS_LABELS[s.status] ?? s.status,
+    "חוב כולל (ש\"ח)": debtByStudent.get(s.id) ?? 0,
+    הערות: s.notes ?? "",
+  }));
+}
+
 function toRow(values: StudentFormInput) {
   const parsed = studentSchema.parse(values);
   return {

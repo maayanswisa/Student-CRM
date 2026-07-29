@@ -1,18 +1,6 @@
 import * as XLSX from "xlsx";
-import type { ReportRow } from "@/actions/reports";
-import { PAYMENT_METHOD_LABELS } from "@/lib/validation/student";
-import { LESSON_STATUS_LABELS } from "@/lib/validation/lesson";
 
-function toDisplayRows(rows: ReportRow[]) {
-  return rows.map((row) => ({
-    תאריך: new Date(row.date).toLocaleDateString("he-IL"),
-    "תלמיד/ה": row.studentName,
-    "מחיר (ש\"ח)": row.price,
-    סטטוס: LESSON_STATUS_LABELS[row.status] ?? row.status,
-    שולם: row.isPaid ? "כן" : "לא",
-    "אמצעי תשלום": row.paymentMethod ? PAYMENT_METHOD_LABELS[row.paymentMethod] ?? "" : "",
-  }));
-}
+type DisplayRow = Record<string, string | number>;
 
 function csvEscape(value: string | number): string {
   const str = String(value);
@@ -22,22 +10,20 @@ function csvEscape(value: string | number): string {
   return str;
 }
 
-export function buildCsv(rows: ReportRow[]): string {
-  const displayRows = toDisplayRows(rows);
-  if (displayRows.length === 0) return "";
-  const headers = Object.keys(displayRows[0]);
+export function buildCsv(rows: DisplayRow[]): string {
+  if (rows.length === 0) return "";
+  const headers = Object.keys(rows[0]);
   const lines = [
     headers.join(","),
-    ...displayRows.map((row) => headers.map((h) => csvEscape(row[h as keyof typeof row])).join(",")),
+    ...rows.map((row) => headers.map((h) => csvEscape(row[h])).join(",")),
   ];
   return "﻿" + lines.join("\n");
 }
 
-export function buildXlsxBlob(rows: ReportRow[]): Blob {
-  const displayRows = toDisplayRows(rows);
-  const worksheet = XLSX.utils.json_to_sheet(displayRows);
+export function buildXlsxBlob(rows: DisplayRow[], sheetName: string): Blob {
+  const worksheet = XLSX.utils.json_to_sheet(rows);
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "דוח חודשי");
+  XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
   const buffer = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
   return new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

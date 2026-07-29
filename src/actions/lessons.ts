@@ -3,7 +3,33 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { lessonSchema, type LessonFormValues } from "@/lib/validation/lesson";
+import { PAYMENT_METHOD_LABELS } from "@/lib/validation/student";
 import type { PaymentMethod } from "@/types/database";
+
+export async function getLessonsExportRows() {
+  const supabase = await createClient();
+  const [{ data: lessons }, { data: students }] = await Promise.all([
+    supabase.from("lessons").select("*").order("date_time", { ascending: false }),
+    supabase.from("students").select("id, student_name"),
+  ]);
+
+  const nameById = new Map((students ?? []).map((s) => [s.id, s.student_name]));
+
+  return (lessons ?? []).map((lesson) => ({
+    תאריך: new Date(lesson.date_time).toLocaleString("he-IL", {
+      dateStyle: "short",
+      timeStyle: "short",
+    }),
+    "תלמיד/ה": nameById.get(lesson.student_id) ?? "לא ידוע",
+    "משך (דקות)": lesson.duration_minutes,
+    "מחיר (ש\"ח)": Number(lesson.price),
+    שולם: lesson.is_paid ? "כן" : "לא",
+    "אמצעי תשלום": lesson.payment_method ? PAYMENT_METHOD_LABELS[lesson.payment_method] ?? "" : "",
+    "תאריך תשלום": lesson.payment_date
+      ? new Date(lesson.payment_date).toLocaleDateString("he-IL")
+      : "",
+  }));
+}
 
 function revalidateLessonPaths(studentId?: string) {
   revalidatePath("/");

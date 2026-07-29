@@ -1,3 +1,5 @@
+const PAYMENT_PHONE = "0526460735";
+
 function normalizeIsraeliPhone(phone: string): string {
   const digits = phone.replace(/\D/g, "");
   if (digits.startsWith("972")) return digits;
@@ -20,8 +22,7 @@ export function buildPaymentReminderLink(params: {
   const message = [
     `היי! מדובר בתזכורת תשלום עבור השיעורים של ${studentName}.`,
     `יש ${unpaidCount} שיעורים שהושלמו וטרם שולמו, על סך ${totalOwed.toFixed(2)} ש"ח.`,
-    `אפשר להסדיר בביט, פייבוקס, מזומן או העברה בנקאית - איך שנוח יותר.`,
-    `תודה רבה!`,
+    `אפשר להעביר בביט/פייבוקס למספר: ${PAYMENT_PHONE}. תודה רבה!`,
   ].join("\n");
   return buildWhatsAppLink(phone, message);
 }
@@ -40,6 +41,29 @@ export function buildLessonReminderLink(params: {
   const message = [
     `היי! רק להזכיר ש${studentName ? `ל${studentName}` : ""} יש שיעור מחר בשעה ${time}.`,
     `נתראה בקרוב :)`,
+  ].join("\n");
+  return buildWhatsAppLink(phone, message);
+}
+
+export function buildMonthlyStatementLink(params: {
+  phone: string;
+  studentName: string;
+  monthLabel: string;
+  lessons: { dateTime: string; price: number; isPaid: boolean }[];
+  totalOwed: number;
+}): string {
+  const { phone, studentName, monthLabel, lessons, totalOwed } = params;
+  const lines = lessons.map((lesson, i) => {
+    const date = new Date(lesson.dateTime).toLocaleDateString("he-IL");
+    const status = lesson.isPaid ? "שולם" : "לא שולם";
+    return `${i + 1}. ${date} - ${lesson.price.toFixed(0)} ש"ח - ${status}`;
+  });
+  const message = [
+    `סיכום שיעורים עבור ${studentName} - ${monthLabel}:`,
+    ...(lines.length > 0 ? lines : ["לא היו שיעורים שהושלמו בחודש זה."]),
+    "",
+    `סה"כ יתרה לתשלום (כולל חובות קודמים): ${totalOwed.toFixed(2)} ש"ח`,
+    `אפשר להעביר בביט/פייבוקס למספר: ${PAYMENT_PHONE}. תודה רבה!`,
   ].join("\n");
   return buildWhatsAppLink(phone, message);
 }

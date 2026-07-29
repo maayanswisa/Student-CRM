@@ -15,6 +15,9 @@ import {
 import { GRADES } from "@/lib/validation/student";
 import { StudentFormDialog } from "./student-form";
 import { StudentImportDialog } from "./student-import-dialog";
+import { ExportMenuButton } from "@/components/shared/export-menu-button";
+import { getStudentsExportRows } from "@/actions/students";
+import { buildCsv, buildXlsxBlob, downloadBlob } from "@/lib/export";
 
 const STATUS_LABELS: Record<string, string> = {
   active: "פעיל/ה",
@@ -36,6 +39,16 @@ export function StudentsToolbar() {
   const [search, setSearch] = useState(searchParams.get("q") ?? "");
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+
+  async function exportStudentsCsv() {
+    const rows = await getStudentsExportRows();
+    downloadBlob(new Blob([buildCsv(rows)], { type: "text/csv;charset=utf-8" }), "תלמידים.csv");
+  }
+
+  async function exportStudentsXlsx() {
+    const rows = await getStudentsExportRows();
+    downloadBlob(buildXlsxBlob(rows, "תלמידים"), "תלמידים.xlsx");
+  }
 
   function setParam(key: string, value: string | null) {
     const params = new URLSearchParams(searchParams.toString());
@@ -100,6 +113,11 @@ export function StudentsToolbar() {
         </Select>
       </div>
       <div className="flex gap-2">
+        <ExportMenuButton
+          label="ייצוא תלמידים"
+          onExportCsv={exportStudentsCsv}
+          onExportXlsx={exportStudentsXlsx}
+        />
         <Button variant="outline" onClick={() => setImportOpen(true)}>
           <Upload className="size-4" />
           ייבוא תלמידים
