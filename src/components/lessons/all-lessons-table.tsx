@@ -20,9 +20,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreVertical, CheckCircle2, XCircle, Wallet } from "lucide-react";
+import { MoreVertical, CheckCircle2, XCircle, Wallet, Pencil } from "lucide-react";
 import { markLessonCompleted, cancelLesson } from "@/actions/lessons";
 import { MarkPaidDialog } from "./mark-paid-dialog";
+import { LessonFormDialog } from "./lesson-form";
 import { PAYMENT_METHOD_LABELS } from "@/lib/validation/student";
 import type { Lesson, LessonStatus, Student } from "@/types/database";
 
@@ -47,6 +48,7 @@ const STATUS_VARIANT: Record<LessonStatus, "default" | "secondary" | "outline" |
 export function AllLessonsTable({ title, lessons }: { title: string; lessons: LessonRow[] }) {
   const router = useRouter();
   const [payingLessonId, setPayingLessonId] = useState<string | null>(null);
+  const [editingLesson, setEditingLesson] = useState<LessonRow | null>(null);
   const payingLesson = lessons.find((l) => l.id === payingLessonId);
 
   async function complete(lesson: LessonRow) {
@@ -111,40 +113,45 @@ export function AllLessonsTable({ title, lessons }: { title: string; lessons: Le
                   <Badge variant={STATUS_VARIANT[lesson.status]}>{STATUS_LABEL[lesson.status]}</Badge>
                 </TableCell>
                 <TableCell>
-                  {lesson.status === "scheduled" ? (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
-                          <Button variant="ghost" size="icon" className="size-8">
-                            <MoreVertical className="size-4" />
-                          </Button>
-                        }
-                      />
-                      <DropdownMenuContent align="end">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      render={
+                        <Button variant="ghost" size="icon" className="size-8">
+                          <MoreVertical className="size-4" />
+                        </Button>
+                      }
+                    />
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setEditingLesson(lesson)}>
+                        <Pencil className="size-4" />
+                        עריכה / הוספת פתק
+                      </DropdownMenuItem>
+                      {lesson.status !== "completed" && (
                         <DropdownMenuItem onClick={() => complete(lesson)}>
                           <CheckCircle2 className="size-4" />
                           סימון כהושלם
                         </DropdownMenuItem>
+                      )}
+                      {lesson.status === "completed" && !lesson.is_paid && (
                         <DropdownMenuItem onClick={() => setPayingLessonId(lesson.id)}>
                           <Wallet className="size-4" />
                           סימון כשולם
                         </DropdownMenuItem>
+                      )}
+                      {lesson.status !== "cancelled_in_time" && (
                         <DropdownMenuItem onClick={() => cancel(lesson, "in_time")}>
                           <XCircle className="size-4" />
                           ביטול בזמן
                         </DropdownMenuItem>
+                      )}
+                      {lesson.status !== "cancelled_late" && (
                         <DropdownMenuItem onClick={() => cancel(lesson, "late")}>
                           <XCircle className="size-4" />
                           ביטול באיחור
                         </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  ) : lesson.status === "completed" && !lesson.is_paid ? (
-                    <Button variant="ghost" size="sm" onClick={() => setPayingLessonId(lesson.id)}>
-                      <Wallet className="size-4" />
-                      סימון כשולם
-                    </Button>
-                  ) : null}
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}
@@ -158,6 +165,17 @@ export function AllLessonsTable({ title, lessons }: { title: string; lessons: Le
           studentId={payingLesson.student_id}
           open={!!payingLessonId}
           onOpenChange={(open) => !open && setPayingLessonId(null)}
+        />
+      )}
+
+      {editingLesson && (
+        <LessonFormDialog
+          studentId={editingLesson.student_id}
+          studentName={editingLesson.student.student_name}
+          hourlyRate={editingLesson.price}
+          lesson={editingLesson}
+          open={!!editingLesson}
+          onOpenChange={(open) => !open && setEditingLesson(null)}
         />
       )}
     </div>

@@ -155,23 +155,25 @@ export function LessonHistoryTable({
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => setEditingLesson(lesson)}>
                         <Pencil className="size-4" />
-                        עריכה
+                        עריכה / הוספת פתק
                       </DropdownMenuItem>
-                      {lesson.status === "scheduled" && (
-                        <>
-                          <DropdownMenuItem onClick={() => complete(lesson)}>
-                            <CheckCircle2 className="size-4" />
-                            סימון כהושלם
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => cancel(lesson, "in_time")}>
-                            <XCircle className="size-4" />
-                            ביטול בזמן
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => cancel(lesson, "late")}>
-                            <XCircle className="size-4" />
-                            ביטול באיחור
-                          </DropdownMenuItem>
-                        </>
+                      {lesson.status !== "completed" && (
+                        <DropdownMenuItem onClick={() => complete(lesson)}>
+                          <CheckCircle2 className="size-4" />
+                          סימון כהושלם
+                        </DropdownMenuItem>
+                      )}
+                      {lesson.status !== "cancelled_in_time" && (
+                        <DropdownMenuItem onClick={() => cancel(lesson, "in_time")}>
+                          <XCircle className="size-4" />
+                          ביטול בזמן
+                        </DropdownMenuItem>
+                      )}
+                      {lesson.status !== "cancelled_late" && (
+                        <DropdownMenuItem onClick={() => cancel(lesson, "late")}>
+                          <XCircle className="size-4" />
+                          ביטול באיחור
+                        </DropdownMenuItem>
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>

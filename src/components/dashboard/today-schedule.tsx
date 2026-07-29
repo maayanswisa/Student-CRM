@@ -13,9 +13,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CheckCircle2, Wallet, XCircle, ChevronDown, MessageCircle } from "lucide-react";
+import { CheckCircle2, Wallet, XCircle, ChevronDown, MessageCircle, MoreVertical, Pencil } from "lucide-react";
 import { markLessonCompleted, cancelLesson } from "@/actions/lessons";
 import { MarkPaidDialog } from "@/components/lessons/mark-paid-dialog";
+import { LessonFormDialog } from "@/components/lessons/lesson-form";
 import { copyToClipboard } from "@/lib/clipboard";
 import type { Lesson, Student } from "@/types/database";
 
@@ -30,6 +31,7 @@ function waLink(phone: string) {
 export function TodaySchedule({ lessons }: { lessons: TodayLessonRow[] }) {
   const router = useRouter();
   const [payingLessonId, setPayingLessonId] = useState<string | null>(null);
+  const [editingLesson, setEditingLesson] = useState<TodayLessonRow | null>(null);
   const payingLesson = lessons.find((l) => l.id === payingLessonId);
 
   async function complete(lesson: TodayLessonRow) {
@@ -151,6 +153,10 @@ export function TodaySchedule({ lessons }: { lessons: TodayLessonRow[] }) {
                     }
                   />
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setEditingLesson(lesson)}>
+                      <Pencil className="size-4" />
+                      עריכה / הוספת פתק
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => cancel(lesson, "in_time")}>
                       ביטול בזמן
                     </DropdownMenuItem>
@@ -161,9 +167,44 @@ export function TodaySchedule({ lessons }: { lessons: TodayLessonRow[] }) {
                 </DropdownMenu>
               </div>
             ) : (
-              <Badge variant="outline">
-                {lesson.status === "completed" ? "הושלם" : "בוטל"}
-              </Badge>
+              <div className="flex items-center gap-1.5">
+                <Badge variant="outline">
+                  {lesson.status === "completed" ? "הושלם" : "בוטל"}
+                </Badge>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button size="icon" variant="ghost" className="size-8">
+                        <MoreVertical className="size-4" />
+                      </Button>
+                    }
+                  />
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setEditingLesson(lesson)}>
+                      <Pencil className="size-4" />
+                      עריכה / הוספת פתק
+                    </DropdownMenuItem>
+                    {lesson.status !== "completed" && (
+                      <DropdownMenuItem onClick={() => complete(lesson)}>
+                        <CheckCircle2 className="size-4" />
+                        סימון כהושלם
+                      </DropdownMenuItem>
+                    )}
+                    {lesson.status !== "cancelled_in_time" && (
+                      <DropdownMenuItem onClick={() => cancel(lesson, "in_time")}>
+                        <XCircle className="size-4" />
+                        ביטול בזמן
+                      </DropdownMenuItem>
+                    )}
+                    {lesson.status !== "cancelled_late" && (
+                      <DropdownMenuItem onClick={() => cancel(lesson, "late")}>
+                        <XCircle className="size-4" />
+                        ביטול באיחור
+                      </DropdownMenuItem>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             )}
           </div>
         ))}
@@ -175,6 +216,17 @@ export function TodaySchedule({ lessons }: { lessons: TodayLessonRow[] }) {
           studentId={payingLesson.student_id}
           open={!!payingLessonId}
           onOpenChange={(open) => !open && setPayingLessonId(null)}
+        />
+      )}
+
+      {editingLesson && (
+        <LessonFormDialog
+          studentId={editingLesson.student_id}
+          studentName={editingLesson.student.student_name}
+          hourlyRate={editingLesson.price}
+          lesson={editingLesson}
+          open={!!editingLesson}
+          onOpenChange={(open) => !open && setEditingLesson(null)}
         />
       )}
     </Card>

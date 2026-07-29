@@ -67,3 +67,38 @@ export async function setStudentStatus(id: string, status: StudentStatus) {
   revalidatePath(`/students/${id}`);
   revalidatePath("/");
 }
+
+export async function updateSchedulePreference(
+  id: string,
+  days: string[],
+  time: string
+) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("students")
+    .update({
+      preferred_learning_day: days,
+      preferred_learning_time: time || null,
+    })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/schedule");
+  revalidatePath("/students");
+  revalidatePath(`/students/${id}`);
+}
+
+export async function clearSchedulePreference(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("students")
+    .update({ preferred_learning_day: [], preferred_learning_time: null })
+    .eq("id", id);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/schedule");
+  revalidatePath("/students");
+  revalidatePath(`/students/${id}`);
+}
