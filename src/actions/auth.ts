@@ -37,6 +37,46 @@ export async function login(
   redirect("/");
 }
 
+export interface RegisterState {
+  error?: string;
+  success?: boolean;
+}
+
+export async function register(
+  _prevState: RegisterState,
+  formData: FormData
+): Promise<RegisterState> {
+  const email = String(formData.get("email") ?? "");
+  const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
+
+  if (!email || !password) {
+    return { error: "יש להזין אימייל וסיסמה" };
+  }
+  if (password.length < 6) {
+    return { error: "הסיסמה חייבת להכיל לפחות 6 תווים" };
+  }
+  if (password !== confirmPassword) {
+    return { error: "הסיסמאות אינן תואמות" };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signUp({ email, password });
+
+  if (error) {
+    if (error.code === "user_already_exists") {
+      return { error: "כבר קיים חשבון עם המייל הזה" };
+    }
+    return { error: `שגיאה: ${error.message}` };
+  }
+
+  if (data.session) {
+    redirect("/");
+  }
+
+  return { success: true };
+}
+
 export async function logout() {
   const supabase = await createClient();
   await supabase.auth.signOut();

@@ -11,6 +11,7 @@ export type PaymentMethod = "bit" | "paybox" | "cash" | "bank_transfer";
 export type Student = {
   id: string;
   created_at: string;
+  teacher_id: string;
   student_name: string;
   mother_name: string;
   student_phone: string | null;
@@ -30,6 +31,7 @@ export type Student = {
 export type Lesson = {
   id: string;
   created_at: string;
+  teacher_id: string;
   student_id: string;
   date_time: string;
   duration_minutes: number;
@@ -60,6 +62,7 @@ export type Database = {
       students: {
         Row: Student;
         Insert: {
+          teacher_id?: string;
           student_name: string;
           mother_name: string;
           student_phone?: string | null;
@@ -76,6 +79,7 @@ export type Database = {
           upcoming_exam_date?: string | null;
         };
         Update: {
+          teacher_id?: string;
           student_name?: string;
           mother_name?: string;
           student_phone?: string | null;
@@ -96,6 +100,7 @@ export type Database = {
       lessons: {
         Row: Lesson;
         Insert: {
+          teacher_id?: string;
           student_id: string;
           date_time: string;
           duration_minutes?: number;
@@ -107,6 +112,7 @@ export type Database = {
           lesson_summary?: string | null;
         };
         Update: {
+          teacher_id?: string;
           student_id?: string;
           date_time?: string;
           duration_minutes?: number;

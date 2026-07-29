@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, GraduationCap } from "lucide-react";
+import { GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { navItems } from "./nav-items";
-import { logout } from "@/actions/auth";
 import { ThemeToggle } from "./theme-toggle";
+import { UserMenu } from "./user-menu";
 
-export function Sidebar() {
+export function Sidebar({ email }: { email: string }) {
   const pathname = usePathname();
 
   return (
@@ -18,7 +18,10 @@ export function Sidebar() {
           <GraduationCap className="size-6 text-primary" />
           <span className="font-semibold">CRM למורים פרטיים</span>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          <UserMenu email={email} />
+        </div>
       </div>
       <nav className="flex flex-1 flex-col gap-1 px-3">
         {navItems.map((item) => {
@@ -40,15 +43,6 @@ export function Sidebar() {
           );
         })}
       </nav>
-      <form action={logout} className="px-3 pb-5">
-        <button
-          type="submit"
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground/70 transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-        >
-          <LogOut className="size-4" />
-          התנתקות
-        </button>
-      </form>
     </aside>
   );
 }

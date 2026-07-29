@@ -10,17 +10,17 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const supabase = await createClient();
-  const { data: students } = await supabase
-    .from("students")
-    .select("*")
-    .eq("status", "active")
-    .order("student_name");
+  const [{ data: students }, { data: userData }] = await Promise.all([
+    supabase.from("students").select("*").eq("status", "active").order("student_name"),
+    supabase.auth.getUser(),
+  ]);
+  const email = userData.user?.email ?? "";
 
   return (
     <div className="flex min-h-svh">
-      <Sidebar />
+      <Sidebar email={email} />
       <div className="flex-1">
-        <MobileHeader />
+        <MobileHeader email={email} />
         <main className="mx-auto max-w-5xl px-4 pb-24 pt-6 md:pb-10">
           {children}
         </main>

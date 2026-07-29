@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState } from "react";
-import { login, type LoginState } from "@/actions/auth";
+import { register, type RegisterState } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,10 +12,18 @@ import {
   FieldError,
 } from "@/components/ui/field";
 
-const initialState: LoginState = {};
+const initialState: RegisterState = {};
 
-export function LoginForm() {
-  const [state, formAction, pending] = useActionState(login, initialState);
+export function RegisterForm() {
+  const [state, formAction, pending] = useActionState(register, initialState);
+
+  if (state.success) {
+    return (
+      <p className="text-center text-sm">
+        נרשמת בהצלחה! בדקי את תיבת המייל שלך ואשרי את החשבון כדי להתחבר.
+      </p>
+    );
+  }
 
   return (
     <form action={formAction}>
@@ -30,18 +38,28 @@ export function LoginForm() {
             id="password"
             name="password"
             type="password"
-            autoComplete="current-password"
+            autoComplete="new-password"
+            required
+          />
+        </Field>
+        <Field>
+          <FieldLabel htmlFor="confirmPassword">אימות סיסמה</FieldLabel>
+          <Input
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            autoComplete="new-password"
             required
           />
         </Field>
         {state.error && <FieldError>{state.error}</FieldError>}
         <Button type="submit" disabled={pending} className="w-full">
-          {pending ? "מתחבר..." : "התחברות"}
+          {pending ? "נרשם/ת..." : "הרשמה"}
         </Button>
         <p className="text-center text-sm text-muted-foreground">
-          אין לך חשבון?{" "}
-          <Link href="/register" className="text-primary hover:underline">
-            הרשמה
+          כבר יש לך חשבון?{" "}
+          <Link href="/login" className="text-primary hover:underline">
+            התחברות
           </Link>
         </p>
       </FieldGroup>
