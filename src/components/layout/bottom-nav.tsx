@@ -3,14 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { navItems } from "./nav-items";
+import { navItems, adminNavItem } from "./nav-items";
 
-export function BottomNav() {
+export function BottomNav({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
+  const items = isAdmin ? [...navItems, adminNavItem] : navItems;
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t bg-background md:hidden">
-      {navItems.map((item) => {
+      {items.map((item) => {
         const active = pathname === item.href;
         return (
           <Link

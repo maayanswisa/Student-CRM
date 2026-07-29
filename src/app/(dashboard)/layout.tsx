@@ -3,6 +3,7 @@ import { BottomNav } from "@/components/layout/bottom-nav";
 import { MobileHeader } from "@/components/layout/mobile-header";
 import { QuickActionFab } from "@/components/lessons/quick-action-fab";
 import { createClient } from "@/lib/supabase/server";
+import { isAdminEmail } from "@/lib/admin";
 
 export default async function DashboardLayout({
   children,
@@ -15,10 +16,11 @@ export default async function DashboardLayout({
     supabase.auth.getUser(),
   ]);
   const email = userData.user?.email ?? "";
+  const isAdmin = isAdminEmail(email);
 
   return (
     <div className="flex min-h-svh">
-      <Sidebar email={email} />
+      <Sidebar email={email} isAdmin={isAdmin} />
       <div className="flex-1">
         <MobileHeader email={email} />
         <main className="mx-auto max-w-5xl px-4 pb-24 pt-6 md:pb-10">
@@ -26,7 +28,7 @@ export default async function DashboardLayout({
         </main>
       </div>
       <QuickActionFab students={students ?? []} />
-      <BottomNav />
+      <BottomNav isAdmin={isAdmin} />
     </div>
   );
 }

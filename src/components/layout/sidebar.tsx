@@ -4,12 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { navItems } from "./nav-items";
+import { navItems, adminNavItem } from "./nav-items";
 import { ThemeToggle } from "./theme-toggle";
 import { UserMenu } from "./user-menu";
 
-export function Sidebar({ email }: { email: string }) {
+export function Sidebar({ email, isAdmin }: { email: string; isAdmin: boolean }) {
   const pathname = usePathname();
+  const items = isAdmin ? [...navItems, adminNavItem] : navItems;
 
   return (
     <aside className="hidden md:flex md:w-60 md:flex-col md:border-e md:bg-sidebar md:text-sidebar-foreground">
@@ -24,7 +25,7 @@ export function Sidebar({ email }: { email: string }) {
         </div>
       </div>
       <nav className="flex flex-1 flex-col gap-1 px-3">
-        {navItems.map((item) => {
+        {items.map((item) => {
           const active = pathname === item.href;
           return (
             <Link

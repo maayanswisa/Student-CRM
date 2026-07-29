@@ -1,5 +1,13 @@
 import type { LucideIcon } from "lucide-react";
-import { LayoutDashboard, Users, CalendarClock, CalendarDays, Calendar, FileBarChart } from "lucide-react";
+import {
+  LayoutDashboard,
+  Users,
+  CalendarClock,
+  CalendarDays,
+  Calendar,
+  FileBarChart,
+  ShieldCheck,
+} from "lucide-react";
 
 export interface NavItem {
   href: string;
@@ -15,3 +23,5 @@ export const navItems: NavItem[] = [
   { href: "/calendar", label: "יומן", icon: Calendar },
   { href: "/reports", label: "דוחות", icon: FileBarChart },
 ];
+
+export const adminNavItem: NavItem = { href: "/admin", label: "ניהול", icon: ShieldCheck };
