@@ -130,13 +130,18 @@ export function StudentFormDialog({
     }
   }
 
+  function onInvalid(formErrors: typeof errors) {
+    const firstError = Object.values(formErrors)[0] as { message?: string } | undefined;
+    toast.error(firstError?.message ?? "יש לתקן שדות לא תקינים בטופס");
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{student ? "עריכת תלמיד/ה" : "תלמיד/ה חדש/ה"}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit, onInvalid)}>
           <FieldGroup>
             <div className="grid grid-cols-2 gap-3">
               <Field>
@@ -145,9 +150,8 @@ export function StudentFormDialog({
                 {errors.student_name && <FieldError>{errors.student_name.message}</FieldError>}
               </Field>
               <Field>
-                <FieldLabel htmlFor="mother_name">שם ההורה</FieldLabel>
+                <FieldLabel htmlFor="mother_name">שם ההורה (לא חובה)</FieldLabel>
                 <Input id="mother_name" {...register("mother_name")} />
-                {errors.mother_name && <FieldError>{errors.mother_name.message}</FieldError>}
               </Field>
             </div>
 
@@ -157,16 +161,14 @@ export function StudentFormDialog({
                 <Input id="student_phone" {...register("student_phone")} />
               </Field>
               <Field>
-                <FieldLabel htmlFor="mother_phone">טלפון ההורה</FieldLabel>
+                <FieldLabel htmlFor="mother_phone">טלפון ההורה (לא חובה)</FieldLabel>
                 <Input id="mother_phone" {...register("mother_phone")} />
-                {errors.mother_phone && <FieldError>{errors.mother_phone.message}</FieldError>}
               </Field>
             </div>
 
             <Field>
-              <FieldLabel htmlFor="address">כתובת</FieldLabel>
+              <FieldLabel htmlFor="address">כתובת (לא חובה)</FieldLabel>
               <Input id="address" {...register("address")} />
-              {errors.address && <FieldError>{errors.address.message}</FieldError>}
             </Field>
 
             <div className="grid grid-cols-3 gap-3">
@@ -216,9 +218,8 @@ export function StudentFormDialog({
 
             <div className="grid grid-cols-2 gap-3">
               <Field>
-                <FieldLabel htmlFor="school">בית ספר</FieldLabel>
+                <FieldLabel htmlFor="school">בית ספר (לא חובה)</FieldLabel>
                 <Input id="school" {...register("school")} />
-                {errors.school && <FieldError>{errors.school.message}</FieldError>}
               </Field>
               <Field>
                 <FieldLabel htmlFor="hourly_rate">מחיר לשיעור (ש&quot;ח)</FieldLabel>
