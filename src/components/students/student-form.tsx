@@ -12,6 +12,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,7 +49,7 @@ import {
   ACADEMIC_LEVELS,
   WEEK_DAYS,
 } from "@/lib/validation/student";
-import { createStudent, updateStudent } from "@/actions/students";
+import { createStudent, updateStudent, checkScheduleConflict, type ScheduleConflict } from "@/actions/students";
 import type { Student } from "@/types/database";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -97,6 +107,8 @@ export function StudentFormDialog({
 }) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [conflict, setConflict] = useState<ScheduleConflict | null>(null);
+  const [pendingValues, setPendingValues] = useState<StudentFormValues | null>(null);
   const values = useMemo(
     () => (student ? studentToValues(student) : emptyValues),
     [student]
@@ -115,6 +127,28 @@ export function StudentFormDialog({
   async function onSubmit(values: StudentFormValues) {
     setSubmitting(true);
     try {
+      const found = await checkScheduleConflict(
+        values.preferred_learning_day,
+        values.preferred_learning_time ?? "",
+        values.default_lesson_duration_minutes,
+        student?.id
+      );
+      if (found) {
+        setConflict(found);
+        setPendingValues(values);
+        setSubmitting(false);
+        return;
+      }
+      await save(values);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "משהו השתבש");
+      setSubmitting(false);
+    }
+  }
+
+  async function save(values: StudentFormValues) {
+    setSubmitting(true);
+    try {
       if (student) {
         await updateStudent(student.id, values);
         toast.success("פרטי התלמיד/ה עודכנו");
@@ -129,6 +163,8 @@ export function StudentFormDialog({
       toast.error(err instanceof Error ? err.message : "משהו השתבש");
     } finally {
       setSubmitting(false);
+      setConflict(null);
+      setPendingValues(null);
     }
   }
 
@@ -138,11 +174,12 @@ export function StudentFormDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{student ? "עריכת תלמיד/ה" : "תלמיד/ה חדש/ה"}</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{student ? "עריכת תלמיד/ה" : "תלמיד/ה חדש/ה"}</DialogTitle>
+          </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit, onInvalid)}>
           <FieldGroup>
             <div className="grid grid-cols-2 gap-3">
@@ -325,7 +362,37 @@ export function StudentFormDialog({
             </Button>
           </DialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={!!conflict}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setConflict(null);
+            setPendingValues(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>יש התנגשות בזמנים</AlertDialogTitle>
+            <AlertDialogDescription>
+              כבר יש תלמיד/ה ({conflict?.studentName}) עם יום {conflict?.day} בשעה {conflict?.time}{" "}
+              שחופף למה שבחרת. לשמור בכל זאת?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={submitting}>ביטול</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={submitting}
+              onClick={() => pendingValues && save(pendingValues)}
+            >
+              {submitting ? "שומר..." : "שמירה בכל זאת"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

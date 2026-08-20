@@ -15,6 +15,59 @@ const STATUS_LABELS: Record<StudentStatus, string> = {
   archived: "בארכיון",
 };
 
+function toMinutes(time: string): number | null {
+  const [h, m] = time.split(":").map(Number);
+  if (Number.isNaN(h)) return null;
+  return h * 60 + (Number.isNaN(m) ? 0 : m);
+}
+
+export interface ScheduleConflict {
+  studentName: string;
+  day: string;
+  time: string;
+}
+
+export async function checkScheduleConflict(
+  days: string[],
+  time: string,
+  durationMinutes: number,
+  excludeStudentId?: string
+): Promise<ScheduleConflict | null> {
+  if (!time || days.length === 0) return null;
+  const startMinutes = toMinutes(time);
+  if (startMinutes === null) return null;
+  const endMinutes = startMinutes + durationMinutes;
+
+  const supabase = await createClient();
+  const { data: students, error } = await supabase
+    .from("students")
+    .select("id, student_name, preferred_learning_day, preferred_learning_time, default_lesson_duration_minutes")
+    .eq("status", "active");
+
+  if (error) throw new Error(error.message);
+
+  for (const day of days) {
+    const conflict = (students ?? []).find((s) => {
+      if (s.id === excludeStudentId) return false;
+      if (!s.preferred_learning_day.includes(day)) return false;
+      if (!s.preferred_learning_time) return false;
+      const oStart = toMinutes(s.preferred_learning_time);
+      if (oStart === null) return false;
+      const oEnd = oStart + s.default_lesson_duration_minutes;
+      return oStart < endMinutes && oEnd > startMinutes;
+    });
+    if (conflict) {
+      return {
+        studentName: conflict.student_name,
+        day,
+        time: conflict.preferred_learning_time as string,
+      };
+    }
+  }
+
+  return null;
+}
+
 export async function getStudentsExportRows() {
   const supabase = await createClient();
   const [{ data: students }, { data: lessons }] = await Promise.all([
