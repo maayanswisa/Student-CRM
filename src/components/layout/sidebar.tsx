@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getNavItems, adminNavItem } from "./nav-items";
 import { ThemeToggle } from "./theme-toggle";
@@ -49,6 +49,20 @@ export function Sidebar({ email, isAdmin }: { email: string; isAdmin: boolean })
           );
         })}
       </nav>
+      <div className="border-t border-sidebar-border px-3 py-3">
+        <Link
+          href="/settings"
+          className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+            pathname === "/settings"
+              ? "bg-sidebar-accent text-sidebar-accent-foreground"
+              : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          )}
+        >
+          <Settings className="size-4" />
+          הגדרות
+        </Link>
+      </div>
     </aside>
   );
 }
