@@ -58,6 +58,32 @@ const STATUS_LABELS: Record<string, string> = {
   archived: "בארכיון",
 };
 
+function normalizeTime(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+
+  const withColon = trimmed.match(/^(\d{1,2}):(\d{1,2})$/);
+  if (withColon) {
+    const h = Math.min(23, parseInt(withColon[1], 10));
+    const m = Math.min(59, parseInt(withColon[2], 10));
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  }
+
+  const digitsOnly = trimmed.match(/^\d{1,4}$/);
+  if (digitsOnly) {
+    if (trimmed.length <= 2) {
+      const h = Math.min(23, parseInt(trimmed, 10));
+      return `${String(h).padStart(2, "0")}:00`;
+    }
+    const splitAt = trimmed.length === 3 ? 1 : 2;
+    const h = Math.min(23, parseInt(trimmed.slice(0, splitAt), 10));
+    const m = Math.min(59, parseInt(trimmed.slice(splitAt), 10));
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  }
+
+  return trimmed;
+}
+
 const emptyValues: StudentFormInput = {
   student_name: "",
   mother_name: "",
@@ -320,7 +346,22 @@ export function StudentFormDialog({
             <div className="grid grid-cols-2 gap-3">
               <Field>
                 <FieldLabel htmlFor="preferred_learning_time">שעה מועדפת</FieldLabel>
-                <Input id="preferred_learning_time" placeholder="16:00" {...register("preferred_learning_time")} />
+                <Controller
+                  control={control}
+                  name="preferred_learning_time"
+                  render={({ field }) => (
+                    <Input
+                      id="preferred_learning_time"
+                      placeholder="16:00"
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                      onBlur={() => {
+                        field.onChange(normalizeTime(field.value ?? ""));
+                        field.onBlur();
+                      }}
+                    />
+                  )}
+                />
               </Field>
               <Field>
                 <FieldLabel htmlFor="upcoming_exam_date">תאריך מבחן קרוב</FieldLabel>
