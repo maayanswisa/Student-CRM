@@ -26,6 +26,7 @@ export default async function CalendarPage() {
               mother_phone: student.mother_phone,
               student_phone: student.student_phone,
               hourly_rate: student.hourly_rate,
+              address: student.address,
             },
           },
         ]

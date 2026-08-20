@@ -3,7 +3,18 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Phone, MessageCircle, MoreVertical, Archive, ArchiveRestore, Pencil } from "lucide-react";
+import {
+  Phone,
+  MessageCircle,
+  MoreVertical,
+  Archive,
+  ArchiveRestore,
+  Pencil,
+  GripVertical,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   Table,
@@ -33,9 +44,24 @@ import {
 } from "@/components/ui/alert-dialog";
 import { StudentFormDialog } from "./student-form";
 import { StudentAvatar } from "./student-avatar";
-import { setStudentStatus } from "@/actions/students";
+import { setStudentStatus, reorderStudents } from "@/actions/students";
 import { copyToClipboard } from "@/lib/clipboard";
+import { GRADES, WEEK_DAYS } from "@/lib/validation/student";
+import { cn } from "@/lib/utils";
 import type { Student } from "@/types/database";
+
+const GRADE_RANK: Record<string, number> = Object.fromEntries(GRADES.map((g, i) => [g, i]));
+function gradeRank(grade: string): number {
+  return GRADE_RANK[grade] ?? 999;
+}
+
+const DAY_RANK: Record<string, number> = Object.fromEntries(WEEK_DAYS.map((d, i) => [d, i]));
+function dayRank(student: Student): number {
+  if (student.preferred_learning_day.length === 0) return 999;
+  return Math.min(...student.preferred_learning_day.map((d) => DAY_RANK[d] ?? 999));
+}
+
+type SortKey = "grade" | "day";
 
 const STATUS_LABEL: Record<Student["status"], string> = {
   active: "פעיל/ה",
@@ -53,6 +79,67 @@ export function StudentTable({ students }: { students: Student[] }) {
   const router = useRouter();
   const [editing, setEditing] = useState<Student | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<Student | null>(null);
+  const [order, setOrder] = useState<Student[]>(students);
+  const [prevStudents, setPrevStudents] = useState(students);
+  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" } | null>(null);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+
+  if (students !== prevStudents) {
+    setPrevStudents(students);
+    setOrder(students);
+  }
+
+  const dragEnabled = sort === null;
+  const displayedStudents = sort
+    ? [...order].sort((a, b) => {
+        const diff =
+          sort.key === "grade" ? gradeRank(a.grade) - gradeRank(b.grade) : dayRank(a) - dayRank(b);
+        return sort.dir === "asc" ? diff : -diff;
+      })
+    : order;
+
+  function toggleSort(key: SortKey) {
+    setSort((prev) => {
+      if (!prev || prev.key !== key) return { key, dir: "asc" };
+      if (prev.dir === "asc") return { key, dir: "desc" };
+      return null;
+    });
+  }
+
+  function renderSortIcon(key: SortKey) {
+    if (sort?.key !== key) return <ArrowUpDown className="size-3.5 text-muted-foreground" />;
+    return sort.dir === "asc" ? <ArrowUp className="size-3.5" /> : <ArrowDown className="size-3.5" />;
+  }
+
+  function handleDragStart(id: string) {
+    if (!dragEnabled) return;
+    setDraggedId(id);
+  }
+
+  function handleDragOver(e: React.DragEvent<HTMLTableRowElement>, overId: string) {
+    if (!dragEnabled || !draggedId || draggedId === overId) return;
+    e.preventDefault();
+    setOrder((prev) => {
+      const from = prev.findIndex((s) => s.id === draggedId);
+      const to = prev.findIndex((s) => s.id === overId);
+      if (from === -1 || to === -1 || from === to) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
+  }
+
+  async function handleDragEnd() {
+    if (!draggedId) return;
+    setDraggedId(null);
+    try {
+      await reorderStudents(order.map((s) => s.id));
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "שמירת הסדר נכשלה");
+    }
+  }
 
   async function copyAddress(address: string) {
     try {
@@ -90,8 +177,28 @@ export function StudentTable({ students }: { students: Student[] }) {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-8" />
               <TableHead>תלמיד/ה</TableHead>
-              <TableHead className="hidden md:table-cell">כיתה / רמה</TableHead>
+              <TableHead className="hidden md:table-cell">
+                <button
+                  type="button"
+                  onClick={() => toggleSort("grade")}
+                  className="inline-flex items-center gap-1 hover:text-foreground"
+                >
+                  כיתה / רמה
+                  {renderSortIcon("grade")}
+                </button>
+              </TableHead>
+              <TableHead className="hidden md:table-cell">
+                <button
+                  type="button"
+                  onClick={() => toggleSort("day")}
+                  className="inline-flex items-center gap-1 hover:text-foreground"
+                >
+                  יום לימוד
+                  {renderSortIcon("day")}
+                </button>
+              </TableHead>
               <TableHead className="hidden md:table-cell">בית ספר</TableHead>
               <TableHead className="hidden lg:table-cell">כתובת</TableHead>
               <TableHead>יצירת קשר</TableHead>
@@ -100,8 +207,26 @@ export function StudentTable({ students }: { students: Student[] }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {students.map((student) => (
-              <TableRow key={student.id}>
+            {displayedStudents.map((student) => (
+              <TableRow
+                key={student.id}
+                draggable={dragEnabled}
+                onDragStart={() => handleDragStart(student.id)}
+                onDragOver={(e) => handleDragOver(e, student.id)}
+                onDrop={(e) => e.preventDefault()}
+                onDragEnd={handleDragEnd}
+                className={cn(draggedId === student.id && "opacity-50")}
+              >
+                <TableCell className="cursor-grab px-0 text-center text-muted-foreground active:cursor-grabbing">
+                  {dragEnabled ? (
+                    <GripVertical className="mx-auto size-4" />
+                  ) : (
+                    <span
+                      className="mx-auto block size-4"
+                      title="נקו את המיון כדי לגרור ולסדר ידנית"
+                    />
+                  )}
+                </TableCell>
                 <TableCell className="font-medium">
                   <div className="flex items-center justify-center gap-2">
                     <StudentAvatar name={student.student_name} size="sm" />
@@ -115,6 +240,16 @@ export function StudentTable({ students }: { students: Student[] }) {
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   כיתה {student.grade} · {student.academic_level}
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {student.preferred_learning_day.length > 0 ? (
+                    <>
+                      {student.preferred_learning_day.join(", ")}
+                      {student.preferred_learning_time && ` · ${student.preferred_learning_time}`}
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground">-</span>
+                  )}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">{student.school}</TableCell>
                 <TableCell className="hidden max-w-48 lg:table-cell">

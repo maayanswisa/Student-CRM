@@ -10,6 +10,7 @@ export const studentSchema = z.object({
   academic_level: z.string().trim().optional().or(z.literal("")),
   school: z.string().trim().optional().or(z.literal("")),
   hourly_rate: z.coerce.number().min(0, "מחיר לא יכול להיות שלילי"),
+  default_lesson_duration_minutes: z.coerce.number().min(15, "משך השיעור חייב להיות לפחות 15 דקות"),
   preferred_learning_day: z.array(z.string()),
   preferred_learning_time: z.string().trim().optional().or(z.literal("")),
   status: z.enum(["active", "paused", "archived"]),
@@ -20,7 +21,7 @@ export const studentSchema = z.object({
 export type StudentFormValues = z.output<typeof studentSchema>;
 export type StudentFormInput = z.input<typeof studentSchema>;
 
-export const GRADES = ["ז", "ח", "ט", "י", "יא", "יב"] as const;
+export const GRADES = ["א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י", "יא", "יב"] as const;
 export const ACADEMIC_LEVELS = [
   '3 יח"ל',
   '4 יח"ל',

@@ -71,6 +71,7 @@ export function NewLessonButton({ students }: { students: Student[] }) {
           studentId={selected.id}
           studentName={selected.student_name}
           hourlyRate={selected.hourly_rate}
+          defaultDurationMinutes={selected.default_lesson_duration_minutes}
           open={!!selected}
           onOpenChange={(open) => !open && setSelected(null)}
         />

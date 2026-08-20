@@ -34,7 +34,7 @@ export async function getLessonsExportRows() {
 function revalidateLessonPaths(studentId?: string) {
   revalidatePath("/");
   revalidatePath("/lessons");
-  revalidatePath("/schedule");
+  revalidatePath("/calendar");
   if (studentId) revalidatePath(`/students/${studentId}`);
 }
 
@@ -173,7 +173,8 @@ export async function logCompletedLesson(params: {
 export async function ensureLessonForDate(
   studentId: string,
   dateIso: string,
-  price: number
+  price: number,
+  durationMinutes = 60
 ): Promise<string> {
   const supabase = await createClient();
   const day = new Date(dateIso);
@@ -198,7 +199,7 @@ export async function ensureLessonForDate(
     .insert({
       student_id: studentId,
       date_time: dateIso,
-      duration_minutes: 60,
+      duration_minutes: durationMinutes,
       price,
       status: "scheduled",
       is_paid: false,

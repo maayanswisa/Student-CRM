@@ -190,6 +190,7 @@ export function StudentDetailHeader({
         studentId={student.id}
         studentName={student.student_name}
         hourlyRate={student.hourly_rate}
+        defaultDurationMinutes={student.default_lesson_duration_minutes}
         open={scheduling}
         onOpenChange={setScheduling}
       />

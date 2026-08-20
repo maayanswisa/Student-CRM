@@ -36,6 +36,7 @@ export function LessonFormDialog({
   studentId,
   studentName,
   hourlyRate,
+  defaultDurationMinutes = 60,
   lesson,
   defaultDateTime,
   open,
@@ -44,6 +45,7 @@ export function LessonFormDialog({
   studentId: string;
   studentName: string;
   hourlyRate: number;
+  defaultDurationMinutes?: number;
   lesson?: Lesson;
   defaultDateTime?: string;
   open: boolean;
@@ -55,11 +57,11 @@ export function LessonFormDialog({
     () => ({
       student_id: studentId,
       date_time: toDateTimeLocal(lesson?.date_time ?? defaultDateTime),
-      duration_minutes: lesson?.duration_minutes ?? 60,
+      duration_minutes: lesson?.duration_minutes ?? defaultDurationMinutes,
       price: lesson?.price ?? hourlyRate,
       lesson_summary: lesson?.lesson_summary ?? "",
     }),
-    [studentId, lesson, hourlyRate, defaultDateTime]
+    [studentId, lesson, hourlyRate, defaultDurationMinutes, defaultDateTime]
   );
   const {
     register,

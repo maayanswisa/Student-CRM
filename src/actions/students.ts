@@ -62,12 +62,23 @@ function toRow(values: StudentFormInput) {
     academic_level: parsed.academic_level || "",
     school: parsed.school || "",
     hourly_rate: parsed.hourly_rate,
+    default_lesson_duration_minutes: parsed.default_lesson_duration_minutes,
     preferred_learning_day: parsed.preferred_learning_day,
     preferred_learning_time: parsed.preferred_learning_time || null,
     status: parsed.status,
     notes: parsed.notes || null,
     upcoming_exam_date: parsed.upcoming_exam_date || null,
   };
+}
+
+async function nextSortOrder(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const { data } = await supabase
+    .from("students")
+    .select("sort_order")
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data?.sort_order ?? -1) + 1;
 }
 
 export async function bulkCreateStudents(rows: StudentFormInput[]) {
@@ -87,7 +98,9 @@ export async function bulkCreateStudents(rows: StudentFormInput[]) {
   }
 
   const supabase = await createClient();
-  const { error, data } = await supabase.from("students").insert(validRows).select("id");
+  let nextOrder = await nextSortOrder(supabase);
+  const rowsWithOrder = validRows.map((row) => ({ ...row, sort_order: nextOrder++ }));
+  const { error, data } = await supabase.from("students").insert(rowsWithOrder).select("id");
 
   if (error) throw new Error(error.message);
 
@@ -98,9 +111,10 @@ export async function bulkCreateStudents(rows: StudentFormInput[]) {
 
 export async function createStudent(values: StudentFormValues) {
   const supabase = await createClient();
+  const sort_order = await nextSortOrder(supabase);
   const { error, data } = await supabase
     .from("students")
-    .insert(toRow(values))
+    .insert({ ...toRow(values), sort_order })
     .select("id")
     .single();
 
@@ -109,6 +123,19 @@ export async function createStudent(values: StudentFormValues) {
   revalidatePath("/students");
   revalidatePath("/");
   return data;
+}
+
+export async function reorderStudents(orderedIds: string[]) {
+  const supabase = await createClient();
+  const results = await Promise.all(
+    orderedIds.map((id, index) =>
+      supabase.from("students").update({ sort_order: index }).eq("id", id)
+    )
+  );
+  const failed = results.find((r) => r.error);
+  if (failed?.error) throw new Error(failed.error.message);
+
+  revalidatePath("/students");
 }
 
 export async function updateStudent(id: string, values: StudentFormValues) {
@@ -139,37 +166,3 @@ export async function setStudentStatus(id: string, status: StudentStatus) {
   revalidatePath("/");
 }
 
-export async function updateSchedulePreference(
-  id: string,
-  days: string[],
-  time: string
-) {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("students")
-    .update({
-      preferred_learning_day: days,
-      preferred_learning_time: time || null,
-    })
-    .eq("id", id);
-
-  if (error) throw new Error(error.message);
-
-  revalidatePath("/schedule");
-  revalidatePath("/students");
-  revalidatePath(`/students/${id}`);
-}
-
-export async function clearSchedulePreference(id: string) {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("students")
-    .update({ preferred_learning_day: [], preferred_learning_time: null })
-    .eq("id", id);
-
-  if (error) throw new Error(error.message);
-
-  revalidatePath("/schedule");
-  revalidatePath("/students");
-  revalidatePath(`/students/${id}`);
-}

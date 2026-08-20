@@ -1,7 +1,19 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, ChevronRight, ChevronLeft } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import {
+  Plus,
+  ChevronRight,
+  ChevronLeft,
+  CheckCircle2,
+  XCircle,
+  Pencil,
+  MoreVertical,
+  Wallet,
+  MapPin,
+} from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,14 +23,35 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getMonthGrid, getWeekDays, addMonths, addWeeks, isSameMonth } from "@/lib/calendar";
-import { isSameDay } from "@/lib/schedule-week";
+import {
+  getMonthGrid,
+  getWeekDays,
+  addMonths,
+  addWeeks,
+  addDays,
+  isSameMonth,
+  isSameDay,
+} from "@/lib/calendar";
 import { lessonStatusRowClass } from "@/lib/lesson-style";
 import { LessonFormDialog } from "@/components/lessons/lesson-form";
+import { MarkPaidDialog } from "@/components/lessons/mark-paid-dialog";
+import { ensureLessonForDate, markLessonCompleted, cancelLesson } from "@/actions/lessons";
+import { WEEK_DAYS } from "@/lib/validation/student";
+import { LESSON_STATUS_LABELS } from "@/lib/validation/lesson";
 import type { LessonWithStudent, Student } from "@/types/database";
+
+function wazeUrl(address: string): string {
+  return `https://waze.com/ul?q=${encodeURIComponent(address)}&navigate=yes`;
+}
 
 const WEEKDAY_LABELS = ["א", "ב", "ג", "ד", "ה", "ו", "ש"];
 const MAX_CHIPS_PER_DAY = 3;
@@ -29,6 +62,29 @@ function toLocalNoonIso(date: Date): string {
   return d.toISOString();
 }
 
+function combineDateAndTime(date: Date, time: string | null): Date {
+  const d = new Date(date);
+  if (time) {
+    const [h, m] = time.split(":").map(Number);
+    if (!Number.isNaN(h)) {
+      d.setHours(h, Number.isNaN(m) ? 0 : m, 0, 0);
+      return d;
+    }
+  }
+  d.setHours(12, 0, 0, 0);
+  return d;
+}
+
+type DayItem =
+  | { type: "lesson"; key: string; lesson: LessonWithStudent }
+  | { type: "recurring"; key: string; student: Student; date: Date };
+
+function dayItemTime(item: DayItem): number {
+  return item.type === "lesson"
+    ? new Date(item.lesson.date_time).getTime()
+    : combineDateAndTime(item.date, item.student.preferred_learning_time).getTime();
+}
+
 export function LessonCalendar({
   students,
   lessons,
@@ -36,7 +92,8 @@ export function LessonCalendar({
   students: Student[];
   lessons: LessonWithStudent[];
 }) {
-  const [view, setView] = useState<"week" | "month">("month");
+  const router = useRouter();
+  const [view, setView] = useState<"day" | "week" | "month">("month");
   const [anchor, setAnchor] = useState(new Date());
   const [pickerDate, setPickerDate] = useState<Date | null>(null);
   const [pickerSearch, setPickerSearch] = useState("");
@@ -44,9 +101,12 @@ export function LessonCalendar({
     studentId: string;
     studentName: string;
     hourlyRate: number;
+    defaultDurationMinutes: number;
     defaultDateTime: string;
   } | null>(null);
   const [editingLesson, setEditingLesson] = useState<LessonWithStudent | null>(null);
+  const [payingLesson, setPayingLesson] = useState<LessonWithStudent | null>(null);
+  const [busyKey, setBusyKey] = useState<string | null>(null);
 
   const lessonsByDay = useMemo(() => {
     const map = new Map<string, LessonWithStudent[]>();
@@ -66,11 +126,33 @@ export function LessonCalendar({
     return lessonsByDay.get(date.toDateString()) ?? [];
   }
 
+  function dayItemsFor(date: Date): DayItem[] {
+    const dayLessons = lessonsFor(date);
+    const scheduledStudentIds = new Set(dayLessons.map((l) => l.student_id));
+    const letter = WEEK_DAYS[date.getDay()];
+    const recurringStudents = students.filter(
+      (s) => s.preferred_learning_day.includes(letter) && !scheduledStudentIds.has(s.id)
+    );
+    return [
+      ...dayLessons.map((lesson) => ({ type: "lesson" as const, key: lesson.id, lesson })),
+      ...recurringStudents.map((student) => ({
+        type: "recurring" as const,
+        key: `recurring-${student.id}-${date.toDateString()}`,
+        student,
+        date,
+      })),
+    ];
+  }
+
   function goPrev() {
-    setAnchor((a) => (view === "month" ? addMonths(a, -1) : addWeeks(a, -1)));
+    setAnchor((a) =>
+      view === "month" ? addMonths(a, -1) : view === "week" ? addWeeks(a, -1) : addDays(a, -1)
+    );
   }
   function goNext() {
-    setAnchor((a) => (view === "month" ? addMonths(a, 1) : addWeeks(a, 1)));
+    setAnchor((a) =>
+      view === "month" ? addMonths(a, 1) : view === "week" ? addWeeks(a, 1) : addDays(a, 1)
+    );
   }
   function goToday() {
     setAnchor(new Date());
@@ -91,12 +173,79 @@ export function LessonCalendar({
       studentId: student.id,
       studentName: student.student_name,
       hourlyRate: student.hourly_rate,
+      defaultDurationMinutes: student.default_lesson_duration_minutes,
       defaultDateTime: toLocalNoonIso(pickerDate),
     });
     setPickerDate(null);
   }
 
+  function openRecurringSlot(student: Student, date: Date) {
+    setPendingLesson({
+      studentId: student.id,
+      studentName: student.student_name,
+      hourlyRate: student.hourly_rate,
+      defaultDurationMinutes: student.default_lesson_duration_minutes,
+      defaultDateTime: combineDateAndTime(date, student.preferred_learning_time).toISOString(),
+    });
+  }
+
+  async function markRecurring(
+    student: Student,
+    date: Date,
+    status: "completed" | "cancelled_in_time" | "cancelled_late"
+  ) {
+    const key = `recurring-${student.id}-${date.toDateString()}`;
+    setBusyKey(key);
+    try {
+      const dateIso = combineDateAndTime(date, student.preferred_learning_time).toISOString();
+      const lessonId = await ensureLessonForDate(
+        student.id,
+        dateIso,
+        student.hourly_rate,
+        student.default_lesson_duration_minutes
+      );
+      if (status === "completed") {
+        await markLessonCompleted(lessonId, student.id);
+        toast.success("השיעור סומן כהתקיים");
+      } else {
+        await cancelLesson(lessonId, student.id, status === "cancelled_in_time" ? "in_time" : "late");
+        toast.success("השיעור סומן כבוטל");
+      }
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "משהו השתבש");
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
+  async function markLessonStatus(
+    lesson: LessonWithStudent,
+    status: "completed" | "cancelled_in_time" | "cancelled_late"
+  ) {
+    setBusyKey(lesson.id);
+    try {
+      if (status === "completed") {
+        await markLessonCompleted(lesson.id, lesson.student_id);
+        toast.success("השיעור סומן כהתקיים");
+      } else {
+        await cancelLesson(lesson.id, lesson.student_id, status === "cancelled_in_time" ? "in_time" : "late");
+        toast.success("השיעור סומן כבוטל");
+      }
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "משהו השתבש");
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
   const monthLabel = anchor.toLocaleDateString("he-IL", { year: "numeric", month: "long" });
+  const dayLabel = anchor.toLocaleDateString("he-IL", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
   const weekDays = getWeekDays(anchor);
   const weekLabel = `${weekDays[0].toLocaleDateString("he-IL", { day: "numeric", month: "short" })} - ${weekDays[6].toLocaleDateString("he-IL", { day: "numeric", month: "short" })}`;
 
@@ -121,13 +270,209 @@ export function LessonCalendar({
     );
   }
 
+  function renderRecurringChip(student: Student, date: Date) {
+    const time = student.preferred_learning_time;
+    const key = `recurring-${student.id}-${date.toDateString()}`;
+    const isBusy = busyKey === key;
+    return (
+      <DropdownMenu key={key}>
+        <DropdownMenuTrigger
+          render={
+            <button
+              type="button"
+              disabled={isBusy}
+              className="block w-full truncate rounded-md border border-dashed px-1.5 py-0.5 text-start text-xs text-muted-foreground hover:bg-muted disabled:opacity-50"
+              title={`${student.student_name}${time ? ` · ${time}` : ""} (לפי מערכת שעות שבועית)`}
+            >
+              {time ? `${time} ` : ""}
+              {student.student_name}
+            </button>
+          }
+        />
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => markRecurring(student, date, "completed")}>
+            <CheckCircle2 className="size-4 text-green-600" />
+            שיעור התקיים
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => markRecurring(student, date, "cancelled_in_time")}>
+            <XCircle className="size-4 text-red-600" />
+            התבטל בזמן
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => markRecurring(student, date, "cancelled_late")}>
+            <XCircle className="size-4 text-red-600" />
+            התבטל באיחור
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => openRecurringSlot(student, date)}>
+            <Pencil className="size-4" />
+            עריכת פרטים (מחיר / משך)
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+
+  function renderDayItem(item: DayItem) {
+    return item.type === "lesson" ? renderChip(item.lesson) : renderRecurringChip(item.student, item.date);
+  }
+
+  function renderDayRow(item: DayItem) {
+    if (item.type === "lesson") {
+      const lesson = item.lesson;
+      const time = new Date(lesson.date_time).toLocaleTimeString("he-IL", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      const isBusy = busyKey === lesson.id;
+      return (
+        <div
+          key={item.key}
+          className={cn(
+            "flex items-center justify-between gap-2 rounded-lg border p-2.5",
+            lessonStatusRowClass(lesson.status)
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-medium tabular-nums">{time}</span>
+            <div>
+              <div className="text-sm font-medium">{lesson.student.student_name}</div>
+              <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                <Badge variant="outline" className="text-[10px]">
+                  {LESSON_STATUS_LABELS[lesson.status]}
+                </Badge>
+                <span>{Number(lesson.price)} ש&quot;ח</span>
+                {lesson.is_paid && (
+                  <Badge className="text-[10px]" variant="secondary">
+                    שולם
+                  </Badge>
+                )}
+              </div>
+              {lesson.student.address && (
+                <a
+                  href={wazeUrl(lesson.student.address)}
+                  target="_blank"
+                  rel="noreferrer"
+                  dir="auto"
+                  title={`${lesson.student.address} (פתיחה בוויז)`}
+                  className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+                >
+                  <MapPin className="size-3" />
+                  {lesson.student.address}
+                </a>
+              )}
+            </div>
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button variant="ghost" size="icon" className="size-8" disabled={isBusy}>
+                  <MoreVertical className="size-4" />
+                </Button>
+              }
+            />
+            <DropdownMenuContent align="end">
+              {lesson.status !== "completed" && (
+                <DropdownMenuItem onClick={() => markLessonStatus(lesson, "completed")}>
+                  <CheckCircle2 className="size-4 text-green-600" />
+                  סימון כהושלם
+                </DropdownMenuItem>
+              )}
+              {lesson.status !== "cancelled_in_time" && (
+                <DropdownMenuItem onClick={() => markLessonStatus(lesson, "cancelled_in_time")}>
+                  <XCircle className="size-4 text-red-600" />
+                  ביטול בזמן
+                </DropdownMenuItem>
+              )}
+              {lesson.status !== "cancelled_late" && (
+                <DropdownMenuItem onClick={() => markLessonStatus(lesson, "cancelled_late")}>
+                  <XCircle className="size-4 text-red-600" />
+                  ביטול באיחור
+                </DropdownMenuItem>
+              )}
+              {lesson.status === "completed" && !lesson.is_paid && (
+                <DropdownMenuItem onClick={() => setPayingLesson(lesson)}>
+                  <Wallet className="size-4" />
+                  סימון כשולם
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={() => setEditingLesson(lesson)}>
+                <Pencil className="size-4" />
+                עריכת פרטים
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      );
+    }
+
+    const { student, date } = item;
+    const time = student.preferred_learning_time;
+    const isBusy = busyKey === item.key;
+    return (
+      <div
+        key={item.key}
+        className="flex items-center justify-between gap-2 rounded-lg border border-dashed p-2.5 text-muted-foreground"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-medium tabular-nums">{time ?? "--:--"}</span>
+          <div>
+            <div className="flex items-center gap-1.5 text-sm font-medium">
+              {student.student_name}
+              <span className="text-xs font-normal">(לפי מערכת שעות שבועית)</span>
+            </div>
+            {student.address && (
+              <a
+                href={wazeUrl(student.address)}
+                target="_blank"
+                rel="noreferrer"
+                dir="auto"
+                title={`${student.address} (פתיחה בוויז)`}
+                className="mt-0.5 flex items-center gap-1 text-xs hover:text-foreground hover:underline"
+              >
+                <MapPin className="size-3" />
+                {student.address}
+              </a>
+            )}
+          </div>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button variant="ghost" size="icon" className="size-8" disabled={isBusy}>
+                <MoreVertical className="size-4" />
+              </Button>
+            }
+          />
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => markRecurring(student, date, "completed")}>
+              <CheckCircle2 className="size-4 text-green-600" />
+              שיעור התקיים
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => markRecurring(student, date, "cancelled_in_time")}>
+              <XCircle className="size-4 text-red-600" />
+              התבטל בזמן
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => markRecurring(student, date, "cancelled_late")}>
+              <XCircle className="size-4 text-red-600" />
+              התבטל באיחור
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => openRecurringSlot(student, date)}>
+              <Pencil className="size-4" />
+              עריכת פרטים (מחיר / משך)
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <Tabs value={view} onValueChange={(v) => setView(v as "week" | "month")}>
+        <Tabs value={view} onValueChange={(v) => setView(v as "day" | "week" | "month")}>
           <TabsList>
             <TabsTrigger value="month">חודשי</TabsTrigger>
             <TabsTrigger value="week">שבועי</TabsTrigger>
+            <TabsTrigger value="day">יומי</TabsTrigger>
           </TabsList>
         </Tabs>
         <div className="flex items-center gap-1">
@@ -140,7 +485,9 @@ export function LessonCalendar({
           <Button variant="outline" size="icon" onClick={goNext}>
             <ChevronLeft className="size-4" />
           </Button>
-          <span className="ms-2 text-sm font-medium">{view === "month" ? monthLabel : weekLabel}</span>
+          <span className="ms-2 text-sm font-medium">
+            {view === "month" ? monthLabel : view === "week" ? weekLabel : dayLabel}
+          </span>
         </div>
       </div>
 
@@ -156,7 +503,7 @@ export function LessonCalendar({
               week.map((date, di) => {
                 const inMonth = isSameMonth(date, anchor);
                 const isToday = isSameDay(date, new Date());
-                const dayLessons = lessonsFor(date);
+                const dayItems = dayItemsFor(date);
                 return (
                   <div
                     key={`${wi}-${di}`}
@@ -179,10 +526,10 @@ export function LessonCalendar({
                       </button>
                     </div>
                     <div className="flex flex-col gap-1">
-                      {dayLessons.slice(0, MAX_CHIPS_PER_DAY).map(renderChip)}
-                      {dayLessons.length > MAX_CHIPS_PER_DAY && (
+                      {dayItems.slice(0, MAX_CHIPS_PER_DAY).map(renderDayItem)}
+                      {dayItems.length > MAX_CHIPS_PER_DAY && (
                         <span className="text-[10px] text-muted-foreground">
-                          +{dayLessons.length - MAX_CHIPS_PER_DAY} נוספים
+                          +{dayItems.length - MAX_CHIPS_PER_DAY} נוספים
                         </span>
                       )}
                     </div>
@@ -192,11 +539,26 @@ export function LessonCalendar({
             )}
           </div>
         </div>
+      ) : view === "day" ? (
+        <div className="flex flex-col gap-2">
+          {dayItemsFor(anchor)
+            .sort((a, b) => dayItemTime(a) - dayItemTime(b))
+            .map(renderDayRow)}
+          {dayItemsFor(anchor).length === 0 && (
+            <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+              אין שיעורים ביום זה
+            </p>
+          )}
+          <Button variant="outline" size="sm" className="self-start" onClick={() => openPicker(anchor)}>
+            <Plus className="size-3.5" />
+            שיעור חדש
+          </Button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-7">
           {weekDays.map((date) => {
             const isToday = isSameDay(date, new Date());
-            const dayLessons = lessonsFor(date);
+            const dayItems = dayItemsFor(date);
             return (
               <div
                 key={date.toDateString()}
@@ -212,10 +574,10 @@ export function LessonCalendar({
                   {isToday && <Badge className="text-[10px]">היום</Badge>}
                 </div>
                 <div className="flex flex-col gap-1">
-                  {dayLessons.length === 0 && (
+                  {dayItems.length === 0 && (
                     <p className="text-center text-xs text-muted-foreground">אין שיעורים</p>
                   )}
-                  {dayLessons.map(renderChip)}
+                  {dayItems.map(renderDayItem)}
                 </div>
                 <Button variant="outline" size="sm" onClick={() => openPicker(date)}>
                   <Plus className="size-3.5" />
@@ -267,6 +629,7 @@ export function LessonCalendar({
           studentId={pendingLesson.studentId}
           studentName={pendingLesson.studentName}
           hourlyRate={pendingLesson.hourlyRate}
+          defaultDurationMinutes={pendingLesson.defaultDurationMinutes}
           defaultDateTime={pendingLesson.defaultDateTime}
           open={!!pendingLesson}
           onOpenChange={(open) => !open && setPendingLesson(null)}
@@ -281,6 +644,15 @@ export function LessonCalendar({
           lesson={editingLesson}
           open={!!editingLesson}
           onOpenChange={(open) => !open && setEditingLesson(null)}
+        />
+      )}
+
+      {payingLesson && (
+        <MarkPaidDialog
+          lessonId={payingLesson.id}
+          studentId={payingLesson.student_id}
+          open={!!payingLesson}
+          onOpenChange={(open) => !open && setPayingLesson(null)}
         />
       )}
     </div>

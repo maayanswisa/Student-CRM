@@ -21,6 +21,8 @@ export type Student = {
   academic_level: string;
   school: string;
   hourly_rate: number;
+  default_lesson_duration_minutes: number;
+  sort_order: number;
   preferred_learning_day: string[];
   preferred_learning_time: string | null;
   status: StudentStatus;
@@ -46,7 +48,7 @@ export type Lesson = {
 export type LessonWithStudent = Lesson & {
   student: Pick<
     Student,
-    "id" | "student_name" | "mother_phone" | "student_phone" | "hourly_rate"
+    "id" | "student_name" | "mother_phone" | "student_phone" | "hourly_rate" | "address"
   >;
 };
 
@@ -83,6 +85,8 @@ export type Database = {
           academic_level: string;
           school: string;
           hourly_rate: number;
+          default_lesson_duration_minutes?: number;
+          sort_order?: number;
           preferred_learning_day: string[];
           preferred_learning_time?: string | null;
           status?: StudentStatus;
@@ -100,6 +104,8 @@ export type Database = {
           academic_level?: string;
           school?: string;
           hourly_rate?: number;
+          default_lesson_duration_minutes?: number;
+          sort_order?: number;
           preferred_learning_day?: string[];
           preferred_learning_time?: string | null;
           status?: StudentStatus;

@@ -11,7 +11,7 @@ export default async function StudentsPage({
   const { q, status = "active", grade } = await searchParams;
 
   const supabase = await createClient();
-  let query = supabase.from("students").select("*").order("student_name");
+  let query = supabase.from("students").select("*").order("sort_order");
 
   if (status && status !== "all") {
     query = query.eq("status", status as StudentStatus);

@@ -58,6 +58,7 @@ const emptyValues: StudentFormInput = {
   academic_level: ACADEMIC_LEVELS[0],
   school: "",
   hourly_rate: 0,
+  default_lesson_duration_minutes: 60,
   preferred_learning_day: [],
   preferred_learning_time: "",
   status: "active",
@@ -76,6 +77,7 @@ function studentToValues(student: Student): StudentFormInput {
     academic_level: student.academic_level,
     school: student.school,
     hourly_rate: student.hourly_rate,
+    default_lesson_duration_minutes: student.default_lesson_duration_minutes,
     preferred_learning_day: student.preferred_learning_day,
     preferred_learning_time: student.preferred_learning_time ?? "",
     status: student.status,
@@ -216,15 +218,28 @@ export function StudentFormDialog({
               </Field>
             </div>
 
+            <Field>
+              <FieldLabel htmlFor="school">בית ספר</FieldLabel>
+              <Input id="school" {...register("school")} />
+            </Field>
+
             <div className="grid grid-cols-2 gap-3">
-              <Field>
-                <FieldLabel htmlFor="school">בית ספר</FieldLabel>
-                <Input id="school" {...register("school")} />
-              </Field>
               <Field>
                 <FieldLabel htmlFor="hourly_rate">מחיר לשיעור (ש&quot;ח)</FieldLabel>
                 <Input id="hourly_rate" type="number" step="0.5" {...register("hourly_rate")} />
                 {errors.hourly_rate && <FieldError>{errors.hourly_rate.message}</FieldError>}
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="default_lesson_duration_minutes">משך שיעור (דקות)</FieldLabel>
+                <Input
+                  id="default_lesson_duration_minutes"
+                  type="number"
+                  step="15"
+                  {...register("default_lesson_duration_minutes")}
+                />
+                {errors.default_lesson_duration_minutes && (
+                  <FieldError>{errors.default_lesson_duration_minutes.message}</FieldError>
+                )}
               </Field>
             </div>
 

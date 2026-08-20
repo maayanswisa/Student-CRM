@@ -139,6 +139,7 @@ export function buildRowInput(
     academic_level: get("academic_level"),
     school: get("school"),
     hourly_rate: parsePrice(get("hourly_rate")),
+    default_lesson_duration_minutes: "60",
     preferred_learning_day: parseDays(get("preferred_learning_day")),
     preferred_learning_time: get("preferred_learning_time"),
     status: "active",
