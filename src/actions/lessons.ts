@@ -38,6 +38,56 @@ function revalidateLessonPaths(studentId?: string) {
   if (studentId) revalidatePath(`/students/${studentId}`);
 }
 
+export interface LessonConflict {
+  studentName: string;
+  time: string;
+}
+
+export async function checkLessonConflict(
+  dateTime: string,
+  durationMinutes: number,
+  excludeLessonId?: string
+): Promise<LessonConflict | null> {
+  const supabase = await createClient();
+  const start = new Date(dateTime).getTime();
+  const end = start + durationMinutes * 60000;
+
+  const dayStart = new Date(dateTime);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(dateTime);
+  dayEnd.setHours(23, 59, 59, 999);
+
+  const { data: dayLessons } = await supabase
+    .from("lessons")
+    .select("id, student_id, date_time, duration_minutes, status")
+    .gte("date_time", dayStart.toISOString())
+    .lte("date_time", dayEnd.toISOString());
+
+  const conflict = (dayLessons ?? []).find((lesson) => {
+    if (lesson.id === excludeLessonId) return false;
+    if (lesson.status === "cancelled_in_time" || lesson.status === "cancelled_late") return false;
+    const lStart = new Date(lesson.date_time).getTime();
+    const lEnd = lStart + lesson.duration_minutes * 60000;
+    return lStart < end && lEnd > start;
+  });
+
+  if (!conflict) return null;
+
+  const { data: student } = await supabase
+    .from("students")
+    .select("student_name")
+    .eq("id", conflict.student_id)
+    .single();
+
+  return {
+    studentName: student?.student_name ?? "תלמיד/ה אחר/ת",
+    time: new Date(conflict.date_time).toLocaleTimeString("he-IL", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }),
+  };
+}
+
 export async function createLesson(values: LessonFormValues) {
   const parsed = lessonSchema.parse(values);
   const supabase = await createClient();

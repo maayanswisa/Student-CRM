@@ -48,7 +48,9 @@ export function StudentDetailHeader({
                 <Badge variant="outline">{STATUS_LABEL[student.status]}</Badge>
               </div>
               <p className="text-sm text-muted-foreground">
-                כיתה {student.grade} · {student.academic_level} · {student.school}
+                {[`כיתה ${student.grade}`, student.academic_level, student.school]
+                  .filter(Boolean)
+                  .join(" · ")}
               </p>
             </div>
           </div>

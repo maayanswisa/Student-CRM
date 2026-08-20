@@ -239,7 +239,8 @@ export function StudentTable({ students }: { students: Student[] }) {
                   </div>
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
-                  כיתה {student.grade} · {student.academic_level}
+                  כיתה {student.grade}
+                  {student.academic_level && ` · ${student.academic_level}`}
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {student.preferred_learning_day.length > 0 ? (

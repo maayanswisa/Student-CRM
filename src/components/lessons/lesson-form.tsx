@@ -12,6 +12,16 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,7 +31,7 @@ import {
   type LessonFormValues,
   type LessonFormInput,
 } from "@/lib/validation/lesson";
-import { createLesson, updateLesson } from "@/actions/lessons";
+import { createLesson, updateLesson, checkLessonConflict, type LessonConflict } from "@/actions/lessons";
 import type { Lesson } from "@/types/database";
 
 function toDateTimeLocal(iso?: string): string {
@@ -53,6 +63,11 @@ export function LessonFormDialog({
 }) {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
+  const [conflict, setConflict] = useState<LessonConflict | null>(null);
+  const [pendingSave, setPendingSave] = useState<{
+    values: LessonFormValues;
+    isoDateTime: string;
+  } | null>(null);
   const values = useMemo(
     () => ({
       student_id: studentId,
@@ -76,6 +91,23 @@ export function LessonFormDialog({
     setSubmitting(true);
     try {
       const isoDateTime = new Date(values.date_time).toISOString();
+      const found = await checkLessonConflict(isoDateTime, values.duration_minutes, lesson?.id);
+      if (found) {
+        setConflict(found);
+        setPendingSave({ values, isoDateTime });
+        setSubmitting(false);
+        return;
+      }
+      await save(values, isoDateTime);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "משהו השתבש");
+      setSubmitting(false);
+    }
+  }
+
+  async function save(values: LessonFormValues, isoDateTime: string) {
+    setSubmitting(true);
+    try {
       if (lesson) {
         await updateLesson(lesson.id, studentId, { ...values, date_time: isoDateTime });
         toast.success("השיעור עודכן");
@@ -89,44 +121,77 @@ export function LessonFormDialog({
       toast.error(err instanceof Error ? err.message : "משהו השתבש");
     } finally {
       setSubmitting(false);
+      setConflict(null);
+      setPendingSave(null);
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle>{lesson ? "עריכת שיעור" : `קביעת שיעור ל${studentName}`}</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="date_time">תאריך ושעה</FieldLabel>
-              <Input id="date_time" type="datetime-local" {...register("date_time")} />
-              {errors.date_time && <FieldError>{errors.date_time.message}</FieldError>}
-            </Field>
-            <div className="grid grid-cols-2 gap-3">
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{lesson ? "עריכת שיעור" : `קביעת שיעור ל${studentName}`}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <FieldGroup>
               <Field>
-                <FieldLabel htmlFor="duration_minutes">משך (דקות)</FieldLabel>
-                <Input id="duration_minutes" type="number" step="15" {...register("duration_minutes")} />
+                <FieldLabel htmlFor="date_time">תאריך ושעה</FieldLabel>
+                <Input id="date_time" type="datetime-local" {...register("date_time")} />
+                {errors.date_time && <FieldError>{errors.date_time.message}</FieldError>}
               </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field>
+                  <FieldLabel htmlFor="duration_minutes">משך (דקות)</FieldLabel>
+                  <Input id="duration_minutes" type="number" step="15" {...register("duration_minutes")} />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="price">מחיר (ש&quot;ח)</FieldLabel>
+                  <Input id="price" type="number" step="0.5" {...register("price")} />
+                </Field>
+              </div>
               <Field>
-                <FieldLabel htmlFor="price">מחיר (ש&quot;ח)</FieldLabel>
-                <Input id="price" type="number" step="0.5" {...register("price")} />
+                <FieldLabel htmlFor="lesson_summary">סיכום שיעור / שיעורי בית</FieldLabel>
+                <Textarea id="lesson_summary" rows={3} {...register("lesson_summary")} />
               </Field>
-            </div>
-            <Field>
-              <FieldLabel htmlFor="lesson_summary">סיכום שיעור / שיעורי בית</FieldLabel>
-              <Textarea id="lesson_summary" rows={3} {...register("lesson_summary")} />
-            </Field>
-          </FieldGroup>
-          <DialogFooter className="mt-4">
-            <Button type="submit" disabled={submitting}>
-              {submitting ? "שומר..." : "שמירה"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+            </FieldGroup>
+            <DialogFooter className="mt-4">
+              <Button type="submit" disabled={submitting}>
+                {submitting ? "שומר..." : "שמירה"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={!!conflict}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setConflict(null);
+            setPendingSave(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>יש התנגשות בזמנים</AlertDialogTitle>
+            <AlertDialogDescription>
+              כבר יש שיעור עם {conflict?.studentName} בשעה {conflict?.time} שחופף לזמן שבחרת. לקבוע
+              בכל זאת?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={submitting}>ביטול</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={submitting}
+              onClick={() => pendingSave && save(pendingSave.values, pendingSave.isoDateTime)}
+            >
+              {submitting ? "קובע..." : "קביעה בכל זאת"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

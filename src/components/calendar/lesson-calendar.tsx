@@ -55,7 +55,13 @@ import {
 import { lessonStatusRowClass, lessonStatusLabel } from "@/lib/lesson-style";
 import { LessonFormDialog } from "@/components/lessons/lesson-form";
 import { MarkPaidDialog } from "@/components/lessons/mark-paid-dialog";
-import { ensureLessonForDate, markLessonCompleted, cancelLesson } from "@/actions/lessons";
+import {
+  ensureLessonForDate,
+  markLessonCompleted,
+  cancelLesson,
+  checkLessonConflict,
+  type LessonConflict,
+} from "@/actions/lessons";
 import { WEEK_DAYS } from "@/lib/validation/student";
 import type { LessonWithStudent, Student } from "@/types/database";
 
@@ -119,6 +125,12 @@ export function LessonCalendar({
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [confirmCloseWeek, setConfirmCloseWeek] = useState(false);
   const [closingWeek, setClosingWeek] = useState(false);
+  const [recurringConflict, setRecurringConflict] = useState<{
+    student: Student;
+    date: Date;
+    status: "completed" | "cancelled_in_time" | "cancelled_late";
+    conflict: LessonConflict;
+  } | null>(null);
 
   const lessonsByDay = useMemo(() => {
     const map = new Map<string, LessonWithStudent[]>();
@@ -210,6 +222,28 @@ export function LessonCalendar({
     setBusyKey(key);
     try {
       const dateIso = combineDateAndTime(date, student.preferred_learning_time).toISOString();
+      const found = await checkLessonConflict(dateIso, student.default_lesson_duration_minutes);
+      if (found) {
+        setRecurringConflict({ student, date, status, conflict: found });
+        return;
+      }
+      await proceedMarkRecurring(student, date, status);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "משהו השתבש");
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
+  async function proceedMarkRecurring(
+    student: Student,
+    date: Date,
+    status: "completed" | "cancelled_in_time" | "cancelled_late"
+  ) {
+    const key = `recurring-${student.id}-${date.toDateString()}`;
+    setBusyKey(key);
+    try {
+      const dateIso = combineDateAndTime(date, student.preferred_learning_time).toISOString();
       const lessonId = await ensureLessonForDate(
         student.id,
         dateIso,
@@ -228,6 +262,7 @@ export function LessonCalendar({
       toast.error(err instanceof Error ? err.message : "משהו השתבש");
     } finally {
       setBusyKey(null);
+      setRecurringConflict(null);
     }
   }
 
@@ -276,8 +311,21 @@ export function LessonCalendar({
     const items = weekItemsToClose();
     setClosingWeek(true);
     try {
-      const results = await Promise.allSettled(
+      const conflictChecks = await Promise.all(
         items.map((item) =>
+          item.type === "recurring"
+            ? checkLessonConflict(
+                combineDateAndTime(item.date, item.student.preferred_learning_time).toISOString(),
+                item.student.default_lesson_duration_minutes
+              )
+            : Promise.resolve(null)
+        )
+      );
+      const closable = items.filter((_, i) => !conflictChecks[i]);
+      const skippedForConflict = items.length - closable.length;
+
+      const results = await Promise.allSettled(
+        closable.map((item) =>
           item.type === "recurring"
             ? ensureLessonForDate(
                 item.student.id,
@@ -292,6 +340,9 @@ export function LessonCalendar({
       const succeeded = results.length - failed;
       if (succeeded > 0) toast.success(`${succeeded} שיעורים סומנו כהושלמו`);
       if (failed > 0) toast.error(`${failed} שיעורים נכשלו`);
+      if (skippedForConflict > 0) {
+        toast.error(`${skippedForConflict} שיעורים דולגו בגלל התנגשות בזמנים - יש לטפל בהם ידנית`);
+      }
       router.refresh();
     } finally {
       setClosingWeek(false);
@@ -734,6 +785,37 @@ export function LessonCalendar({
             <AlertDialogCancel disabled={closingWeek}>ביטול</AlertDialogCancel>
             <AlertDialogAction onClick={closeWeek} disabled={closingWeek}>
               {closingWeek ? "סוגר..." : "סגירת השבוע"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!recurringConflict}
+        onOpenChange={(open) => !open && setRecurringConflict(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>יש התנגשות בזמנים</AlertDialogTitle>
+            <AlertDialogDescription>
+              כבר יש שיעור עם {recurringConflict?.conflict.studentName} בשעה{" "}
+              {recurringConflict?.conflict.time} שחופף לזמן הזה. לקבוע בכל זאת?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!busyKey}>ביטול</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={!!busyKey}
+              onClick={() =>
+                recurringConflict &&
+                proceedMarkRecurring(
+                  recurringConflict.student,
+                  recurringConflict.date,
+                  recurringConflict.status
+                )
+              }
+            >
+              קביעה בכל זאת
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

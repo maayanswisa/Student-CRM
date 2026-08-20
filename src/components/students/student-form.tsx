@@ -55,7 +55,7 @@ const emptyValues: StudentFormInput = {
   mother_phone: "",
   address: "",
   grade: GRADES[0],
-  academic_level: ACADEMIC_LEVELS[0],
+  academic_level: "",
   school: "",
   hourly_rate: 0,
   default_lesson_duration_minutes: 60,
@@ -206,6 +206,7 @@ export function StudentFormDialog({
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="">ללא</SelectItem>
                         {ACADEMIC_LEVELS.map((lvl) => (
                           <SelectItem key={lvl} value={lvl}>
                             {lvl}
