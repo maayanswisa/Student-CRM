@@ -13,6 +13,7 @@ import {
   MoreVertical,
   Wallet,
   MapPin,
+  ListChecks,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -41,12 +52,11 @@ import {
   isSameMonth,
   isSameDay,
 } from "@/lib/calendar";
-import { lessonStatusRowClass } from "@/lib/lesson-style";
+import { lessonStatusRowClass, lessonStatusLabel } from "@/lib/lesson-style";
 import { LessonFormDialog } from "@/components/lessons/lesson-form";
 import { MarkPaidDialog } from "@/components/lessons/mark-paid-dialog";
 import { ensureLessonForDate, markLessonCompleted, cancelLesson } from "@/actions/lessons";
 import { WEEK_DAYS } from "@/lib/validation/student";
-import { LESSON_STATUS_LABELS } from "@/lib/validation/lesson";
 import type { LessonWithStudent, Student } from "@/types/database";
 
 function wazeUrl(address: string): string {
@@ -107,6 +117,8 @@ export function LessonCalendar({
   const [editingLesson, setEditingLesson] = useState<LessonWithStudent | null>(null);
   const [payingLesson, setPayingLesson] = useState<LessonWithStudent | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [confirmCloseWeek, setConfirmCloseWeek] = useState(false);
+  const [closingWeek, setClosingWeek] = useState(false);
 
   const lessonsByDay = useMemo(() => {
     const map = new Map<string, LessonWithStudent[]>();
@@ -249,6 +261,44 @@ export function LessonCalendar({
   const weekDays = getWeekDays(anchor);
   const weekLabel = `${weekDays[0].toLocaleDateString("he-IL", { day: "numeric", month: "short" })} - ${weekDays[6].toLocaleDateString("he-IL", { day: "numeric", month: "short" })}`;
 
+  function weekItemsToClose(): DayItem[] {
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+    return weekDays
+      .flatMap((date) => dayItemsFor(date))
+      .filter((item) => {
+        if (dayItemTime(item) > endOfToday.getTime()) return false;
+        return item.type === "recurring" || item.lesson.status === "scheduled";
+      });
+  }
+
+  async function closeWeek() {
+    const items = weekItemsToClose();
+    setClosingWeek(true);
+    try {
+      const results = await Promise.allSettled(
+        items.map((item) =>
+          item.type === "recurring"
+            ? ensureLessonForDate(
+                item.student.id,
+                combineDateAndTime(item.date, item.student.preferred_learning_time).toISOString(),
+                item.student.hourly_rate,
+                item.student.default_lesson_duration_minutes
+              ).then((lessonId) => markLessonCompleted(lessonId, item.student.id))
+            : markLessonCompleted(item.lesson.id, item.lesson.student_id)
+        )
+      );
+      const failed = results.filter((r) => r.status === "rejected").length;
+      const succeeded = results.length - failed;
+      if (succeeded > 0) toast.success(`${succeeded} שיעורים סומנו כהושלמו`);
+      if (failed > 0) toast.error(`${failed} שיעורים נכשלו`);
+      router.refresh();
+    } finally {
+      setClosingWeek(false);
+      setConfirmCloseWeek(false);
+    }
+  }
+
   function renderChip(lesson: LessonWithStudent) {
     const time = new Date(lesson.date_time).toLocaleTimeString("he-IL", {
       hour: "2-digit",
@@ -261,7 +311,7 @@ export function LessonCalendar({
         onClick={() => setEditingLesson(lesson)}
         className={cn(
           "block w-full truncate rounded-md border px-1.5 py-0.5 text-start text-xs hover:opacity-80",
-          lessonStatusRowClass(lesson.status) || "bg-muted/60"
+          lessonStatusRowClass(lesson) || "bg-muted/60"
         )}
         title={`${lesson.student.student_name} · ${time}`}
       >
@@ -328,7 +378,7 @@ export function LessonCalendar({
           key={item.key}
           className={cn(
             "flex items-center justify-between gap-2 rounded-lg border p-2.5",
-            lessonStatusRowClass(lesson.status)
+            lessonStatusRowClass(lesson)
           )}
         >
           <div className="flex items-center gap-3">
@@ -337,7 +387,7 @@ export function LessonCalendar({
               <div className="text-sm font-medium">{lesson.student.student_name}</div>
               <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                 <Badge variant="outline" className="text-[10px]">
-                  {LESSON_STATUS_LABELS[lesson.status]}
+                  {lessonStatusLabel(lesson)}
                 </Badge>
                 <span>{Number(lesson.price)} ש&quot;ח</span>
                 {lesson.is_paid && (
@@ -465,6 +515,8 @@ export function LessonCalendar({
     );
   }
 
+  const weekCloseCount = view === "week" ? weekItemsToClose().length : 0;
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -488,6 +540,19 @@ export function LessonCalendar({
           <span className="ms-2 text-sm font-medium">
             {view === "month" ? monthLabel : view === "week" ? weekLabel : dayLabel}
           </span>
+          {view === "week" && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="ms-2"
+              disabled={weekCloseCount === 0 || closingWeek}
+              onClick={() => setConfirmCloseWeek(true)}
+            >
+              <ListChecks className="size-3.5" />
+              סגירת השבוע
+              {weekCloseCount > 0 && ` (${weekCloseCount})`}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -655,6 +720,24 @@ export function LessonCalendar({
           onOpenChange={(open) => !open && setPayingLesson(null)}
         />
       )}
+
+      <AlertDialog open={confirmCloseWeek} onOpenChange={(open) => !closingWeek && setConfirmCloseWeek(open)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>לסגור את השבוע?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {weekCloseCount} שיעורים (עד היום) עדיין לא סומנו ויעודכנו כ&quot;הושלם&quot;. שיעורים
+              שכבר סומנו כבוטלו או הושלמו לא ישתנו.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={closingWeek}>ביטול</AlertDialogCancel>
+            <AlertDialogAction onClick={closeWeek} disabled={closingWeek}>
+              {closingWeek ? "סוגר..." : "סגירת השבוע"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

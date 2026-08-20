@@ -30,25 +30,33 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { MoreVertical, CheckCircle2, XCircle, Wallet, Pencil, Trash2 } from "lucide-react";
+import {
+  MoreVertical,
+  CheckCircle2,
+  XCircle,
+  Wallet,
+  Pencil,
+  Trash2,
+  MessageSquareText,
+} from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverHeader,
+  PopoverTitle,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { markLessonCompleted, cancelLesson, deleteLesson } from "@/actions/lessons";
 import { MarkPaidDialog } from "./mark-paid-dialog";
 import { LessonFormDialog } from "./lesson-form";
 import { PAYMENT_METHOD_LABELS } from "@/lib/validation/student";
-import { lessonStatusRowClass } from "@/lib/lesson-style";
+import { lessonStatusRowClass, lessonStatusLabel } from "@/lib/lesson-style";
 import { cn } from "@/lib/utils";
 import type { Lesson, LessonStatus, Student } from "@/types/database";
 
 export interface LessonRow extends Lesson {
   student: Pick<Student, "id" | "student_name">;
 }
-
-const STATUS_LABEL: Record<LessonStatus, string> = {
-  scheduled: "מתוכנן",
-  completed: "הושלם",
-  cancelled_in_time: "בוטל בזמן",
-  cancelled_late: "בוטל באיחור",
-};
 
 const STATUS_VARIANT: Record<LessonStatus, "default" | "secondary" | "outline" | "destructive"> = {
   scheduled: "secondary",
@@ -109,12 +117,13 @@ export function AllLessonsTable({ title, lessons }: { title: string; lessons: Le
               <TableHead>תאריך</TableHead>
               <TableHead>מחיר</TableHead>
               <TableHead>סטטוס</TableHead>
+              <TableHead className="w-8" />
               <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {lessons.map((lesson) => (
-              <TableRow key={lesson.id} className={cn(lessonStatusRowClass(lesson.status))}>
+              <TableRow key={lesson.id} className={cn(lessonStatusRowClass(lesson))}>
                 <TableCell>
                   <Link href={`/students/${lesson.student.id}`} className="font-medium hover:underline">
                     {lesson.student.student_name}
@@ -135,7 +144,31 @@ export function AllLessonsTable({ title, lessons }: { title: string; lessons: Le
                   )}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={STATUS_VARIANT[lesson.status]}>{STATUS_LABEL[lesson.status]}</Badge>
+                  <Badge variant={STATUS_VARIANT[lesson.status]}>{lessonStatusLabel(lesson)}</Badge>
+                </TableCell>
+                <TableCell>
+                  {lesson.lesson_summary && (
+                    <Popover>
+                      <PopoverTrigger
+                        render={
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-7 text-muted-foreground"
+                            title="יש פתק לשיעור זה"
+                          >
+                            <MessageSquareText className="size-4" />
+                          </Button>
+                        }
+                      />
+                      <PopoverContent>
+                        <PopoverHeader>
+                          <PopoverTitle>פתק לשיעור</PopoverTitle>
+                        </PopoverHeader>
+                        <p className="whitespace-pre-wrap text-sm">{lesson.lesson_summary}</p>
+                      </PopoverContent>
+                    </Popover>
+                  )}
                 </TableCell>
                 <TableCell>
                   <DropdownMenu>

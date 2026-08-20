@@ -40,16 +40,9 @@ import {
 import { MarkPaidDialog } from "./mark-paid-dialog";
 import { LessonFormDialog } from "./lesson-form";
 import { PAYMENT_METHOD_LABELS } from "@/lib/validation/student";
-import { lessonStatusRowClass } from "@/lib/lesson-style";
+import { lessonStatusRowClass, lessonStatusLabel } from "@/lib/lesson-style";
 import { cn } from "@/lib/utils";
 import type { Lesson, LessonStatus } from "@/types/database";
-
-const STATUS_LABEL: Record<LessonStatus, string> = {
-  scheduled: "מתוכנן",
-  completed: "הושלם",
-  cancelled_in_time: "בוטל בזמן",
-  cancelled_late: "בוטל באיחור",
-};
 
 const STATUS_VARIANT: Record<LessonStatus, "default" | "secondary" | "outline" | "destructive"> = {
   scheduled: "secondary",
@@ -142,7 +135,7 @@ export function LessonHistoryTable({
           </TableHeader>
           <TableBody>
             {lessons.map((lesson) => (
-              <TableRow key={lesson.id} className={cn(lessonStatusRowClass(lesson.status))}>
+              <TableRow key={lesson.id} className={cn(lessonStatusRowClass(lesson))}>
                 <TableCell>
                   {new Date(lesson.date_time).toLocaleString("he-IL", {
                     dateStyle: "short",
@@ -152,7 +145,7 @@ export function LessonHistoryTable({
                 <TableCell>{Number(lesson.price).toFixed(2)} ₪</TableCell>
                 <TableCell>
                   <Badge variant={STATUS_VARIANT[lesson.status]}>
-                    {STATUS_LABEL[lesson.status]}
+                    {lessonStatusLabel(lesson)}
                   </Badge>
                 </TableCell>
                 <TableCell>

@@ -18,7 +18,7 @@ import { markLessonCompleted, cancelLesson } from "@/actions/lessons";
 import { MarkPaidDialog } from "@/components/lessons/mark-paid-dialog";
 import { LessonFormDialog } from "@/components/lessons/lesson-form";
 import { copyToClipboard } from "@/lib/clipboard";
-import { lessonStatusRowClass } from "@/lib/lesson-style";
+import { lessonStatusRowClass, lessonStatusLabel } from "@/lib/lesson-style";
 import { cn } from "@/lib/utils";
 import type { Lesson, Student } from "@/types/database";
 
@@ -91,7 +91,7 @@ export function TodaySchedule({ lessons }: { lessons: TodayLessonRow[] }) {
             key={lesson.id}
             className={cn(
               "flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3",
-              lessonStatusRowClass(lesson.status)
+              lessonStatusRowClass(lesson)
             )}
           >
             <div className="flex items-start gap-2">
@@ -173,9 +173,7 @@ export function TodaySchedule({ lessons }: { lessons: TodayLessonRow[] }) {
               </div>
             ) : (
               <div className="flex items-center gap-1.5">
-                <Badge variant="outline">
-                  {lesson.status === "completed" ? "הושלם" : "בוטל"}
-                </Badge>
+                <Badge variant="outline">{lessonStatusLabel(lesson)}</Badge>
                 <DropdownMenu>
                   <DropdownMenuTrigger
                     render={
