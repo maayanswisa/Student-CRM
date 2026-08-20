@@ -22,7 +22,7 @@ export function Sidebar({ email, isAdmin }: { email: string; isAdmin: boolean })
       <div className="flex items-center justify-between gap-2 px-5 py-5">
         <div className="flex items-center gap-2">
           <GraduationCap className="size-6 text-primary" />
-          <span className="font-semibold">CRM למורים פרטיים</span>
+          <span className="font-semibold">MyCRM</span>
         </div>
         <div className="flex items-center gap-1">
           <ThemeToggle />
