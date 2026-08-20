@@ -1,6 +1,10 @@
+"use client";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, Wallet, CalendarClock, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useEntityLabel } from "@/components/providers/entity-label-provider";
+import { useSessionLabel } from "@/components/providers/session-label-provider";
 
 export function KpiCards({
   activeStudents,
@@ -15,9 +19,11 @@ export function KpiCards({
   monthPaid: number;
   monthUnpaid: number;
 }) {
+  const label = useEntityLabel();
+  const sessionLabel = useSessionLabel();
   const cards = [
     {
-      label: "תלמידים פעילים",
+      label: `${label.plural} פעילים`,
       value: activeStudents.toString(),
       icon: Users,
       accent: "bg-blue-100 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400",
@@ -29,7 +35,7 @@ export function KpiCards({
       accent: "bg-red-100 text-red-600 dark:bg-red-950/50 dark:text-red-400",
     },
     {
-      label: "שיעורים היום",
+      label: `${sessionLabel.plural} היום`,
       value: todaysLessonsCount.toString(),
       icon: CalendarClock,
       accent: "bg-purple-100 text-purple-600 dark:bg-purple-950/50 dark:text-purple-400",

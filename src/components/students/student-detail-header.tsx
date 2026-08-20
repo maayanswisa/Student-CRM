@@ -10,6 +10,8 @@ import { StudentFormDialog } from "@/components/students/student-form";
 import { StudentAvatar } from "@/components/students/student-avatar";
 import { MonthlyStatementDialog } from "@/components/students/monthly-statement-dialog";
 import { buildPaymentReminderLink } from "@/lib/whatsapp";
+import { useEntityLabel } from "@/components/providers/entity-label-provider";
+import { useSessionLabel } from "@/components/providers/session-label-provider";
 import type { Student, Lesson } from "@/types/database";
 import type { StudentDebt } from "@/lib/debt";
 
@@ -32,6 +34,8 @@ export function StudentDetailHeader({
   debt: StudentDebt;
   lessons: Lesson[];
 }) {
+  const entityLabel = useEntityLabel();
+  const sessionLabel = useSessionLabel();
   const [scheduling, setScheduling] = useState(false);
   const [editing, setEditing] = useState(false);
   const [statementOpen, setStatementOpen] = useState(false);
@@ -61,7 +65,7 @@ export function StudentDetailHeader({
             </Button>
             <Button onClick={() => setScheduling(true)}>
               <Plus className="size-4" />
-              קביעת שיעור
+              קביעת {sessionLabel.singular}
             </Button>
           </div>
         </div>
@@ -99,7 +103,9 @@ export function StudentDetailHeader({
           {student.student_phone && (
             <div className="flex items-center justify-between rounded-lg border p-3">
               <div>
-                <p className="text-sm font-medium">{student.student_name} (תלמיד/ה)</p>
+                <p className="text-sm font-medium">
+                  {student.student_name} ({entityLabel.singular})
+                </p>
                 <p className="text-xs text-muted-foreground">{student.student_phone}</p>
               </div>
               <div className="flex gap-1">
@@ -147,7 +153,9 @@ export function StudentDetailHeader({
           <div>
             <p className="text-sm font-medium">חוב מצטבר</p>
             <p className="text-lg font-semibold">{debt.totalOwed.toFixed(2)} ₪</p>
-            <p className="text-xs text-muted-foreground">{debt.unpaidCount} שיעורים שלא שולמו</p>
+            <p className="text-xs text-muted-foreground">
+              {debt.unpaidCount} {sessionLabel.plural} שלא שולמו
+            </p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setStatementOpen(true)}>
@@ -165,6 +173,7 @@ export function StudentDetailHeader({
                       studentName: student.student_name,
                       unpaidCount: debt.unpaidCount,
                       totalOwed: debt.totalOwed,
+                      sessionLabel,
                     })}
                     target="_blank"
                     rel="noreferrer"

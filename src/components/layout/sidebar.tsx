@@ -4,12 +4,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { navItems, adminNavItem } from "./nav-items";
+import { getNavItems, adminNavItem } from "./nav-items";
 import { ThemeToggle } from "./theme-toggle";
 import { UserMenu } from "./user-menu";
+import { useEntityLabel } from "@/components/providers/entity-label-provider";
+import { useSessionLabel } from "@/components/providers/session-label-provider";
 
 export function Sidebar({ email, isAdmin }: { email: string; isAdmin: boolean }) {
   const pathname = usePathname();
+  const entityLabel = useEntityLabel();
+  const sessionLabel = useSessionLabel();
+  const navItems = getNavItems(entityLabel, sessionLabel);
   const items = isAdmin ? [...navItems, adminNavItem] : navItems;
 
   return (

@@ -117,6 +117,42 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+[data-accent="blue"] {
+  --primary: oklch(0.55 0.2 260);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.55 0.2 260 / 50%);
+  --sidebar-primary: oklch(0.55 0.2 260);
+  --sidebar-ring: oklch(0.55 0.2 260 / 50%);
+}
+[data-accent="green"] {
+  --primary: oklch(0.55 0.15 150);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.55 0.15 150 / 50%);
+  --sidebar-primary: oklch(0.55 0.15 150);
+  --sidebar-ring: oklch(0.55 0.15 150 / 50%);
+}
+[data-accent="purple"] {
+  --primary: oklch(0.5 0.22 300);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.5 0.22 300 / 50%);
+  --sidebar-primary: oklch(0.5 0.22 300);
+  --sidebar-ring: oklch(0.5 0.22 300 / 50%);
+}
+[data-accent="rose"] {
+  --primary: oklch(0.55 0.22 15);
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.55 0.22 15 / 50%);
+  --sidebar-primary: oklch(0.55 0.22 15);
+  --sidebar-ring: oklch(0.55 0.22 15 / 50%);
+}
+[data-accent="amber"] {
+  --primary: oklch(0.65 0.16 70);
+  --primary-foreground: oklch(0.145 0 0);
+  --ring: oklch(0.65 0.16 70 / 50%);
+  --sidebar-primary: oklch(0.65 0.16 70);
+  --sidebar-ring: oklch(0.65 0.16 70 / 50%);
+}
+
 .auth-card {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);

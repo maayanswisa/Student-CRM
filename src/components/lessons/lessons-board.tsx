@@ -9,6 +9,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AllLessonsTable, type LessonRow } from "./all-lessons-table";
+import { useEntityLabel } from "@/components/providers/entity-label-provider";
+import { useSessionLabel } from "@/components/providers/session-label-provider";
 
 export function LessonsBoard({
   upcoming,
@@ -19,6 +21,8 @@ export function LessonsBoard({
   history: LessonRow[];
   students: { id: string; student_name: string }[];
 }) {
+  const entityLabel = useEntityLabel();
+  const sessionLabel = useSessionLabel();
   const [studentId, setStudentId] = useState<string>("all");
 
   const filteredUpcoming =
@@ -33,7 +37,7 @@ export function LessonsBoard({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">כל התלמידים</SelectItem>
+          <SelectItem value="all">כל {entityLabel.pluralDefinite}</SelectItem>
           {students.map((s) => (
             <SelectItem key={s.id} value={s.id}>
               {s.student_name}
@@ -42,12 +46,14 @@ export function LessonsBoard({
         </SelectContent>
       </Select>
 
-      <AllLessonsTable title="שיעורים מתוכננים" lessons={filteredUpcoming} />
+      <AllLessonsTable title={`${sessionLabel.plural} מתוכננים`} lessons={filteredUpcoming} />
       <AllLessonsTable title="היסטוריה" lessons={filteredHistory} />
 
       {filteredUpcoming.length === 0 && filteredHistory.length === 0 && (
         <p className="text-sm text-muted-foreground">
-          {studentId === "all" ? "אין עדיין שיעורים במערכת" : "אין שיעורים לתלמיד/ה שנבחר/ה"}
+          {studentId === "all"
+            ? `אין עדיין ${sessionLabel.plural} במערכת`
+            : `אין ${sessionLabel.plural} ל${entityLabel.singular} שנבחר/ה`}
         </p>
       )}
     </div>

@@ -32,6 +32,7 @@ import {
   type LessonFormInput,
 } from "@/lib/validation/lesson";
 import { createLesson, updateLesson, checkLessonConflict, type LessonConflict } from "@/actions/lessons";
+import { useSessionLabel } from "@/components/providers/session-label-provider";
 import type { Lesson } from "@/types/database";
 
 function toDateTimeLocal(iso?: string): string {
@@ -62,6 +63,7 @@ export function LessonFormDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const router = useRouter();
+  const sessionLabel = useSessionLabel();
   const [submitting, setSubmitting] = useState(false);
   const [conflict, setConflict] = useState<LessonConflict | null>(null);
   const [pendingSave, setPendingSave] = useState<{
@@ -110,10 +112,10 @@ export function LessonFormDialog({
     try {
       if (lesson) {
         await updateLesson(lesson.id, studentId, { ...values, date_time: isoDateTime });
-        toast.success("השיעור עודכן");
+        toast.success(`${sessionLabel.singularDefinite} ${sessionLabel.verb("עודכן", "עודכנה")}`);
       } else {
         await createLesson({ ...values, date_time: isoDateTime });
-        toast.success("השיעור נקבע");
+        toast.success(`${sessionLabel.singularDefinite} ${sessionLabel.verb("נקבע", "נקבעה")}`);
       }
       onOpenChange(false);
       router.refresh();
@@ -131,7 +133,11 @@ export function LessonFormDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{lesson ? "עריכת שיעור" : `קביעת שיעור ל${studentName}`}</DialogTitle>
+            <DialogTitle>
+              {lesson
+                ? `עריכת ${sessionLabel.singular}`
+                : `קביעת ${sessionLabel.singular} ל${studentName}`}
+            </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)}>
             <FieldGroup>
@@ -151,7 +157,7 @@ export function LessonFormDialog({
                 </Field>
               </div>
               <Field>
-                <FieldLabel htmlFor="lesson_summary">סיכום שיעור / שיעורי בית</FieldLabel>
+                <FieldLabel htmlFor="lesson_summary">סיכום {sessionLabel.singular}</FieldLabel>
                 <Textarea id="lesson_summary" rows={3} {...register("lesson_summary")} />
               </Field>
             </FieldGroup>
@@ -177,8 +183,8 @@ export function LessonFormDialog({
           <AlertDialogHeader>
             <AlertDialogTitle>יש התנגשות בזמנים</AlertDialogTitle>
             <AlertDialogDescription>
-              כבר יש שיעור עם {conflict?.studentName} בשעה {conflict?.time} שחופף לזמן שבחרת. לקבוע
-              בכל זאת?
+              כבר יש {sessionLabel.singular} עם {conflict?.studentName} בשעה {conflict?.time} שחופף
+              לזמן שבחרת. לקבוע בכל זאת?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

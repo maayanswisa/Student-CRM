@@ -18,6 +18,7 @@ import { StudentImportDialog } from "./student-import-dialog";
 import { ExportMenuButton } from "@/components/shared/export-menu-button";
 import { getStudentsExportRows } from "@/actions/students";
 import { buildCsv, buildXlsxBlob, downloadBlob } from "@/lib/export";
+import { useEntityLabel } from "@/components/providers/entity-label-provider";
 
 const STATUS_LABELS: Record<string, string> = {
   active: "פעיל/ה",
@@ -35,6 +36,7 @@ export function StudentsToolbar() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const entityLabel = useEntityLabel();
   const [, startTransition] = useTransition();
   const [search, setSearch] = useState(searchParams.get("q") ?? "");
   const [createOpen, setCreateOpen] = useState(false);
@@ -42,12 +44,15 @@ export function StudentsToolbar() {
 
   async function exportStudentsCsv() {
     const rows = await getStudentsExportRows();
-    downloadBlob(new Blob([buildCsv(rows)], { type: "text/csv;charset=utf-8" }), "תלמידים.csv");
+    downloadBlob(
+      new Blob([buildCsv(rows)], { type: "text/csv;charset=utf-8" }),
+      `${entityLabel.plural}.csv`
+    );
   }
 
   async function exportStudentsXlsx() {
     const rows = await getStudentsExportRows();
-    downloadBlob(buildXlsxBlob(rows, "תלמידים"), "תלמידים.xlsx");
+    downloadBlob(buildXlsxBlob(rows, entityLabel.plural), `${entityLabel.plural}.xlsx`);
   }
 
   function setParam(key: string, value: string | null) {
@@ -114,17 +119,17 @@ export function StudentsToolbar() {
       </div>
       <div className="flex gap-2">
         <ExportMenuButton
-          label="ייצוא תלמידים"
+          label={`ייצוא ${entityLabel.plural}`}
           onExportCsv={exportStudentsCsv}
           onExportXlsx={exportStudentsXlsx}
         />
         <Button variant="outline" onClick={() => setImportOpen(true)}>
           <Upload className="size-4" />
-          ייבוא תלמידים
+          ייבוא {entityLabel.plural}
         </Button>
         <Button onClick={() => setCreateOpen(true)}>
           <Plus className="size-4" />
-          תלמיד/ה חדש/ה
+          {entityLabel.singular} חדש/ה
         </Button>
       </div>
       <StudentFormDialog open={createOpen} onOpenChange={setCreateOpen} />

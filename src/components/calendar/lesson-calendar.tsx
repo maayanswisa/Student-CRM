@@ -64,6 +64,8 @@ import {
 } from "@/actions/lessons";
 import { WEEK_DAYS } from "@/lib/validation/student";
 import { addressDetails } from "@/lib/address";
+import { useEntityLabel } from "@/components/providers/entity-label-provider";
+import { useSessionLabel } from "@/components/providers/session-label-provider";
 import type { LessonWithStudent, Student } from "@/types/database";
 
 function wazeUrl(address: string): string {
@@ -110,6 +112,8 @@ export function LessonCalendar({
   lessons: LessonWithStudent[];
 }) {
   const router = useRouter();
+  const entityLabel = useEntityLabel();
+  const sessionLabel = useSessionLabel();
   const [view, setView] = useState<"day" | "week" | "month">("month");
   const [anchor, setAnchor] = useState(new Date());
   const [pickerDate, setPickerDate] = useState<Date | null>(null);
@@ -258,10 +262,10 @@ export function LessonCalendar({
       );
       if (status === "completed") {
         await markLessonCompleted(lessonId, student.id);
-        toast.success("השיעור סומן כהתקיים");
+        toast.success(`${sessionLabel.singularDefinite} ${sessionLabel.verb("סומן", "סומנה")} כ${sessionLabel.verb("התקיים", "התקיימה")}`);
       } else {
         await cancelLesson(lessonId, student.id, status === "cancelled_in_time" ? "in_time" : "late");
-        toast.success("השיעור סומן כבוטל");
+        toast.success(`${sessionLabel.singularDefinite} ${sessionLabel.verb("סומן", "סומנה")} כ${sessionLabel.verb("בוטל", "בוטלה")}`);
       }
       router.refresh();
     } catch (err) {
@@ -280,10 +284,10 @@ export function LessonCalendar({
     try {
       if (status === "completed") {
         await markLessonCompleted(lesson.id, lesson.student_id);
-        toast.success("השיעור סומן כהתקיים");
+        toast.success(`${sessionLabel.singularDefinite} ${sessionLabel.verb("סומן", "סומנה")} כ${sessionLabel.verb("התקיים", "התקיימה")}`);
       } else {
         await cancelLesson(lesson.id, lesson.student_id, status === "cancelled_in_time" ? "in_time" : "late");
-        toast.success("השיעור סומן כבוטל");
+        toast.success(`${sessionLabel.singularDefinite} ${sessionLabel.verb("סומן", "סומנה")} כ${sessionLabel.verb("בוטל", "בוטלה")}`);
       }
       router.refresh();
     } catch (err) {
@@ -346,10 +350,12 @@ export function LessonCalendar({
       );
       const failed = results.filter((r) => r.status === "rejected").length;
       const succeeded = results.length - failed;
-      if (succeeded > 0) toast.success(`${succeeded} שיעורים סומנו כהושלמו`);
-      if (failed > 0) toast.error(`${failed} שיעורים נכשלו`);
+      if (succeeded > 0) toast.success(`${succeeded} ${sessionLabel.plural} סומנו כהושלמו`);
+      if (failed > 0) toast.error(`${failed} ${sessionLabel.plural} נכשלו`);
       if (skippedForConflict > 0) {
-        toast.error(`${skippedForConflict} שיעורים דולגו בגלל התנגשות בזמנים - יש לטפל בהם ידנית`);
+        toast.error(
+          `${skippedForConflict} ${sessionLabel.plural} דולגו בגלל התנגשות בזמנים - יש לטפל בהם ידנית`
+        );
       }
       router.refresh();
     } finally {
@@ -401,7 +407,7 @@ export function LessonCalendar({
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => markRecurring(student, date, "completed")}>
             <CheckCircle2 className="size-4 text-green-600" />
-            שיעור התקיים
+            {sessionLabel.singular} {sessionLabel.verb("התקיים", "התקיימה")}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => markRecurring(student, date, "cancelled_in_time")}>
             <XCircle className="size-4 text-red-600" />
@@ -558,7 +564,7 @@ export function LessonCalendar({
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => markRecurring(student, date, "completed")}>
               <CheckCircle2 className="size-4 text-green-600" />
-              שיעור התקיים
+              {sessionLabel.singular} {sessionLabel.verb("התקיים", "התקיימה")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => markRecurring(student, date, "cancelled_in_time")}>
               <XCircle className="size-4 text-red-600" />
@@ -674,12 +680,12 @@ export function LessonCalendar({
             .map(renderDayRow)}
           {dayItemsFor(anchor).length === 0 && (
             <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-              אין שיעורים ביום זה
+              אין {sessionLabel.plural} ביום זה
             </p>
           )}
           <Button variant="outline" size="sm" className="self-start" onClick={() => openPicker(anchor)}>
             <Plus className="size-3.5" />
-            שיעור חדש
+            {sessionLabel.singular} חדש
           </Button>
         </div>
       ) : (
@@ -703,13 +709,15 @@ export function LessonCalendar({
                 </div>
                 <div className="flex flex-col gap-1">
                   {dayItems.length === 0 && (
-                    <p className="text-center text-xs text-muted-foreground">אין שיעורים</p>
+                    <p className="text-center text-xs text-muted-foreground">
+                      אין {sessionLabel.plural}
+                    </p>
                   )}
                   {dayItems.map(renderDayItem)}
                 </div>
                 <Button variant="outline" size="sm" onClick={() => openPicker(date)}>
                   <Plus className="size-3.5" />
-                  שיעור חדש
+                  {sessionLabel.singular} חדש
                 </Button>
               </div>
             );
@@ -721,14 +729,15 @@ export function LessonCalendar({
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>
-              בחירת תלמיד/ה{pickerDate ? ` ל-${pickerDate.toLocaleDateString("he-IL")}` : ""}
+              בחירת {entityLabel.singular}
+              {pickerDate ? ` ל-${pickerDate.toLocaleDateString("he-IL")}` : ""}
             </DialogTitle>
           </DialogHeader>
           <div className="relative">
             <Search className="pointer-events-none absolute right-2.5 top-2.5 size-4 text-muted-foreground" />
             <Input
               autoFocus
-              placeholder="חיפוש תלמיד/ה..."
+              placeholder={`חיפוש ${entityLabel.singular}...`}
               value={pickerSearch}
               onChange={(e) => setPickerSearch(e.target.value)}
               className="pe-8"
@@ -746,7 +755,9 @@ export function LessonCalendar({
               </button>
             ))}
             {filteredStudents.length === 0 && (
-              <p className="p-3 text-center text-sm text-muted-foreground">לא נמצאו תלמידים</p>
+              <p className="p-3 text-center text-sm text-muted-foreground">
+                לא נמצאו {entityLabel.plural}
+              </p>
             )}
           </div>
         </DialogContent>
@@ -789,8 +800,8 @@ export function LessonCalendar({
           <AlertDialogHeader>
             <AlertDialogTitle>לסגור את השבוע?</AlertDialogTitle>
             <AlertDialogDescription>
-              {weekCloseCount} שיעורים (עד היום) עדיין לא סומנו ויעודכנו כ&quot;הושלם&quot;. שיעורים
-              שכבר סומנו כבוטלו או הושלמו לא ישתנו.
+              {weekCloseCount} {sessionLabel.plural} (עד היום) עדיין לא סומנו ויעודכנו
+              כ&quot;הושלם&quot;. {sessionLabel.plural} שכבר סומנו כבוטלו או הושלמו לא ישתנו.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -810,7 +821,7 @@ export function LessonCalendar({
           <AlertDialogHeader>
             <AlertDialogTitle>יש התנגשות בזמנים</AlertDialogTitle>
             <AlertDialogDescription>
-              כבר יש שיעור עם {recurringConflict?.conflict.studentName} בשעה{" "}
+              כבר יש {sessionLabel.singular} עם {recurringConflict?.conflict.studentName} בשעה{" "}
               {recurringConflict?.conflict.time} שחופף לזמן הזה. לקבוע בכל זאת?
             </AlertDialogDescription>
           </AlertDialogHeader>

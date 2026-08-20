@@ -30,7 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  IMPORT_FIELDS,
+  getImportFields,
   autoMatchColumns,
   buildRowInput,
   parseSpreadsheetFile,
@@ -38,6 +38,8 @@ import {
   type ParsedSheet,
 } from "@/lib/import-students";
 import { bulkCreateStudents } from "@/actions/students";
+import { useEntityLabel } from "@/components/providers/entity-label-provider";
+import { useSessionLabel } from "@/components/providers/session-label-provider";
 
 const NONE = "__none__";
 const PREVIEW_FIELDS: ImportFieldKey[] = [
@@ -56,6 +58,9 @@ export function StudentImportDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const router = useRouter();
+  const entityLabel = useEntityLabel();
+  const sessionLabel = useSessionLabel();
+  const importFields = getImportFields(entityLabel, sessionLabel);
   const [parsed, setParsed] = useState<ParsedSheet | null>(null);
   const [mapping, setMapping] = useState<Record<ImportFieldKey, string | null>>(
     {} as Record<ImportFieldKey, string | null>
@@ -95,11 +100,11 @@ export function StudentImportDialog({
       if (inserted > 0) {
         toast.success(
           skipped > 0
-            ? `יובאו ${inserted} תלמידים בהצלחה (${skipped} שורות דולגו)`
-            : `יובאו ${inserted} תלמידים בהצלחה`
+            ? `יובאו ${inserted} ${entityLabel.plural} בהצלחה (${skipped} שורות דולגו)`
+            : `יובאו ${inserted} ${entityLabel.plural} בהצלחה`
         );
       } else {
-        toast.error("לא יובא אף תלמיד. בדקי את המיפוי ואת הנתונים בקובץ");
+        toast.error(`לא יובא אף ${entityLabel.singularMale}. בדקי את המיפוי ואת הנתונים בקובץ`);
       }
 
       if (inserted > 0) {
@@ -134,14 +139,14 @@ export function StudentImportDialog({
       >
 
         <DialogHeader>
-          <DialogTitle>ייבוא תלמידים מקובץ</DialogTitle>
+          <DialogTitle>ייבוא {entityLabel.plural} מקובץ</DialogTitle>
         </DialogHeader>
 
         {!parsed ? (
           <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed p-8 text-center">
             <Upload className="size-8 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">
-              בחרי קובץ CSV או Excel (.xlsx) עם רשימת תלמידים
+              בחרי קובץ CSV או Excel (.xlsx) עם רשימת {entityLabel.plural}
             </p>
             <Input
               type="file"
@@ -158,7 +163,7 @@ export function StudentImportDialog({
             <div>
               <h3 className="mb-2 text-sm font-medium">התאמת עמודות</h3>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {IMPORT_FIELDS.map(({ key, label, required }) => (
+                {importFields.map(({ key, label, required }) => (
                   <div key={key} className="flex flex-col gap-1">
                     <span className="text-xs text-muted-foreground">
                       {label}
@@ -189,7 +194,7 @@ export function StudentImportDialog({
               </div>
               {!mapping.student_name && (
                 <p className="mt-2 text-xs text-destructive">
-                  יש למפות את שדה שם התלמיד/ה כדי להמשיך
+                  יש למפות את שדה שם {entityLabel.singularDefinite} כדי להמשיך
                 </p>
               )}
             </div>
@@ -204,7 +209,7 @@ export function StudentImportDialog({
                     <TableRow>
                       {PREVIEW_FIELDS.map((key) => (
                         <TableHead key={key}>
-                          {IMPORT_FIELDS.find((f) => f.key === key)?.label}
+                          {importFields.find((f) => f.key === key)?.label}
                         </TableHead>
                       ))}
                     </TableRow>

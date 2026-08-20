@@ -42,6 +42,7 @@ import { LessonFormDialog } from "./lesson-form";
 import { PAYMENT_METHOD_LABELS } from "@/lib/validation/student";
 import { lessonStatusRowClass, lessonStatusLabel } from "@/lib/lesson-style";
 import { cn } from "@/lib/utils";
+import { useSessionLabel } from "@/components/providers/session-label-provider";
 import type { Lesson, LessonStatus } from "@/types/database";
 
 const STATUS_VARIANT: Record<LessonStatus, "default" | "secondary" | "outline" | "destructive"> = {
@@ -63,6 +64,7 @@ export function LessonHistoryTable({
   hourlyRate: number;
 }) {
   const router = useRouter();
+  const sessionLabel = useSessionLabel();
   const [payingLessonId, setPayingLessonId] = useState<string | null>(null);
   const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
   const [deletingLesson, setDeletingLesson] = useState<Lesson | null>(null);
@@ -83,7 +85,9 @@ export function LessonHistoryTable({
   async function complete(lesson: Lesson) {
     try {
       await markLessonCompleted(lesson.id, studentId);
-      toast.success("השיעור סומן כהושלם");
+      toast.success(
+        `${sessionLabel.singularDefinite} ${sessionLabel.verb("סומן", "סומנה")} כ${sessionLabel.verb("הושלם", "הושלמה")}`
+      );
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "משהו השתבש");
@@ -93,7 +97,7 @@ export function LessonHistoryTable({
   async function cancel(lesson: Lesson, timing: "in_time" | "late") {
     try {
       await cancelLesson(lesson.id, studentId, timing);
-      toast.success("השיעור בוטל");
+      toast.success(`${sessionLabel.singularDefinite} ${sessionLabel.verb("בוטל", "בוטלה")}`);
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "משהו השתבש");
@@ -103,7 +107,7 @@ export function LessonHistoryTable({
   async function remove(lesson: Lesson) {
     try {
       await deleteLesson(lesson.id, studentId);
-      toast.success("השיעור נמחק");
+      toast.success(`${sessionLabel.singularDefinite} ${sessionLabel.verb("נמחק", "נמחקה")}`);
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "משהו השתבש");
@@ -115,7 +119,7 @@ export function LessonHistoryTable({
   if (lessons.length === 0) {
     return (
       <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-        אין עדיין שיעורים
+        אין עדיין {sessionLabel.plural}
       </div>
     );
   }
@@ -199,7 +203,7 @@ export function LessonHistoryTable({
                         onClick={() => setDeletingLesson(lesson)}
                       >
                         <Trash2 className="size-4" />
-                        מחיקת שיעור
+                        מחיקת {sessionLabel.singular}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -213,9 +217,10 @@ export function LessonHistoryTable({
       <AlertDialog open={!!deletingLesson} onOpenChange={(open) => !open && setDeletingLesson(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>למחוק את השיעור?</AlertDialogTitle>
+            <AlertDialogTitle>למחוק את {sessionLabel.singularDefinite}?</AlertDialogTitle>
             <AlertDialogDescription>
-              הפעולה בלתי הפיכה - השיעור יימחק לצמיתות מההיסטוריה.
+              הפעולה בלתי הפיכה - {sessionLabel.singularDefinite}{" "}
+              {sessionLabel.verb("יימחק", "תימחק")} לצמיתות מההיסטוריה.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

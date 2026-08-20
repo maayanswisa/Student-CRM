@@ -3,14 +3,16 @@ import { NewLessonButton } from "@/components/lessons/new-lesson-button";
 import { LessonsExportButton } from "@/components/lessons/lessons-export-button";
 import { LessonsBoard } from "@/components/lessons/lessons-board";
 import type { LessonRow } from "@/components/lessons/all-lessons-table";
+import { getSessionLabelServer } from "@/lib/session-label-server";
 import type { Lesson, Student } from "@/types/database";
 
 export default async function LessonsPage() {
   const supabase = await createClient();
 
-  const [{ data: students }, { data: lessons }] = await Promise.all([
+  const [{ data: students }, { data: lessons }, sessionLabel] = await Promise.all([
     supabase.from("students").select("*").order("student_name"),
     supabase.from("lessons").select("*"),
+    getSessionLabelServer(),
   ]);
 
   const allStudents: Student[] = students ?? [];
@@ -37,7 +39,7 @@ export default async function LessonsPage() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">שיעורים</h1>
+        <h1 className="text-2xl font-semibold">{sessionLabel.plural}</h1>
         <div className="flex gap-2">
           <LessonsExportButton />
           <NewLessonButton students={activeStudents} />

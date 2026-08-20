@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { markLessonPaid } from "@/actions/lessons";
 import { PAYMENT_METHOD_LABELS } from "@/lib/validation/student";
+import { useSessionLabel } from "@/components/providers/session-label-provider";
 import type { PaymentMethod } from "@/types/database";
 
 const METHODS: PaymentMethod[] = ["bit", "paybox", "cash", "bank_transfer"];
@@ -28,13 +29,14 @@ export function MarkPaidDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const router = useRouter();
+  const sessionLabel = useSessionLabel();
   const [submitting, setSubmitting] = useState<PaymentMethod | null>(null);
 
   async function choose(method: PaymentMethod) {
     setSubmitting(method);
     try {
       await markLessonPaid(lessonId, studentId, method);
-      toast.success("השיעור סומן כשולם");
+      toast.success(`${sessionLabel.singularDefinite} ${sessionLabel.verb("סומן", "סומנה")} כשולם`);
       onOpenChange(false);
       router.refresh();
     } catch (err) {

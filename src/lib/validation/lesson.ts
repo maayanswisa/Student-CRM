@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const lessonSchema = z.object({
-  student_id: z.string().uuid("יש לבחור תלמיד/ה"),
+  student_id: z.string().uuid("יש לבחור מהרשימה"),
   date_time: z.string().min(1, "יש לבחור תאריך ושעה"),
   duration_minutes: z.coerce.number().min(15),
   price: z.coerce.number().min(0),

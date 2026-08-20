@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { StudentsToolbar } from "@/components/students/students-toolbar";
 import { StudentTable } from "@/components/students/student-table";
+import { getEntityLabelServer } from "@/lib/entity-label-server";
 import type { StudentStatus } from "@/types/database";
 
 export default async function StudentsPage({
@@ -23,14 +24,19 @@ export default async function StudentsPage({
     query = query.or(`student_name.ilike.%${q}%,school.ilike.%${q}%`);
   }
 
-  const { data: students, error } = await query;
+  const [{ data: students, error }, entityLabel] = await Promise.all([
+    query,
+    getEntityLabelServer(),
+  ]);
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">תלמידים</h1>
+      <h1 className="text-2xl font-semibold">{entityLabel.plural}</h1>
       <StudentsToolbar />
       {error ? (
-        <p className="text-sm text-destructive">שגיאה בטעינת התלמידים: {error.message}</p>
+        <p className="text-sm text-destructive">
+          שגיאה בטעינת {entityLabel.pluralDefinite}: {error.message}
+        </p>
       ) : (
         <StudentTable students={students ?? []} />
       )}

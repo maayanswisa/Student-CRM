@@ -14,12 +14,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { logCompletedLesson } from "@/actions/lessons";
 import { PAYMENT_METHOD_LABELS } from "@/lib/validation/student";
+import { useEntityLabel } from "@/components/providers/entity-label-provider";
+import { useSessionLabel } from "@/components/providers/session-label-provider";
 import type { PaymentMethod, Student } from "@/types/database";
 
 const METHODS: PaymentMethod[] = ["bit", "paybox", "cash", "bank_transfer"];
 
 export function QuickActionFab({ students }: { students: Student[] }) {
   const router = useRouter();
+  const entityLabel = useEntityLabel();
+  const sessionLabel = useSessionLabel();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Student | null>(null);
@@ -44,7 +48,7 @@ export function QuickActionFab({ students }: { students: Student[] }) {
         paid,
         paymentMethod,
       });
-      toast.success(`שיעור עם ${selected.student_name} נרשם`);
+      toast.success(`${sessionLabel.singular} עם ${selected.student_name} ${sessionLabel.verb("נרשם", "נרשמה")}`);
       setOpen(false);
       reset();
       router.refresh();
@@ -61,7 +65,7 @@ export function QuickActionFab({ students }: { students: Student[] }) {
         size="icon-lg"
         className="fixed bottom-20 start-4 z-40 size-14 rounded-full shadow-lg md:hidden"
         onClick={() => setOpen(true)}
-        aria-label="רישום שיעור מהיר"
+        aria-label={`רישום ${sessionLabel.singular} מהיר`}
       >
         <Zap className="size-6" />
       </Button>
@@ -76,7 +80,9 @@ export function QuickActionFab({ students }: { students: Student[] }) {
         <DrawerContent>
           <DrawerHeader>
             <DrawerTitle>
-              {selected ? `שיעור עם ${selected.student_name}` : "רישום שיעור מהיר"}
+              {selected
+                ? `${sessionLabel.singular} עם ${selected.student_name}`
+                : `רישום ${sessionLabel.singular} מהיר`}
             </DrawerTitle>
           </DrawerHeader>
 
@@ -87,7 +93,7 @@ export function QuickActionFab({ students }: { students: Student[] }) {
                   <Search className="pointer-events-none absolute right-2.5 top-2.5 size-4 text-muted-foreground" />
                   <Input
                     autoFocus
-                    placeholder="חיפוש תלמיד/ה..."
+                    placeholder={`חיפוש ${entityLabel.singular}...`}
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="pe-8"
@@ -106,7 +112,7 @@ export function QuickActionFab({ students }: { students: Student[] }) {
                   ))}
                   {filtered.length === 0 && (
                     <p className="p-3 text-center text-sm text-muted-foreground">
-                      לא נמצאו תלמידים
+                      לא נמצאו {entityLabel.plural}
                     </p>
                   )}
                 </div>
@@ -114,7 +120,8 @@ export function QuickActionFab({ students }: { students: Student[] }) {
             ) : (
               <>
                 <p className="text-sm text-muted-foreground">
-                  מחיר: {selected.hourly_rate.toFixed(0)} ₪ · השיעור יירשם כהושלם כעת
+                  מחיר: {selected.hourly_rate.toFixed(0)} ₪ · {sessionLabel.singularDefinite}{" "}
+                  {sessionLabel.verb("יירשם", "תירשם")} כ{sessionLabel.verb("הושלם", "הושלמה")} כעת
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   {METHODS.map((method) => (
@@ -132,7 +139,7 @@ export function QuickActionFab({ students }: { students: Student[] }) {
                   טרם שולם
                 </Button>
                 <Button variant="ghost" disabled={submitting} onClick={reset}>
-                  בחירת תלמיד/ה אחר/ת
+                  בחירת {entityLabel.singular} אחר/ת
                 </Button>
               </>
             )}

@@ -3,10 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { navItems, adminNavItem } from "./nav-items";
+import { getNavItems, adminNavItem } from "./nav-items";
+import { useEntityLabel } from "@/components/providers/entity-label-provider";
+import { useSessionLabel } from "@/components/providers/session-label-provider";
 
 export function BottomNav({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
+  const entityLabel = useEntityLabel();
+  const sessionLabel = useSessionLabel();
+  const navItems = getNavItems(entityLabel, sessionLabel);
   const items = isAdmin ? [...navItems, adminNavItem] : navItems;
 
   return (

@@ -1,13 +1,15 @@
 import { createClient } from "@/lib/supabase/server";
 import { LessonCalendar } from "@/components/calendar/lesson-calendar";
+import { getSessionLabelServer } from "@/lib/session-label-server";
 import type { Lesson, LessonWithStudent, Student } from "@/types/database";
 
 export default async function CalendarPage() {
   const supabase = await createClient();
 
-  const [{ data: students }, { data: lessons }] = await Promise.all([
+  const [{ data: students }, { data: lessons }, sessionLabel] = await Promise.all([
     supabase.from("students").select("*").order("student_name"),
     supabase.from("lessons").select("*"),
+    getSessionLabelServer(),
   ]);
 
   const allStudents: Student[] = students ?? [];
@@ -41,7 +43,7 @@ export default async function CalendarPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">יומן שיעורים</h1>
+      <h1 className="text-2xl font-semibold">יומן {sessionLabel.plural}</h1>
       <LessonCalendar students={activeStudents} lessons={lessonsWithStudent} />
     </div>
   );

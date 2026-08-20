@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { lessonSchema, type LessonFormValues } from "@/lib/validation/lesson";
 import { PAYMENT_METHOD_LABELS, WEEK_DAYS } from "@/lib/validation/student";
+import { getEntityLabelServer } from "@/lib/entity-label-server";
 import type { PaymentMethod } from "@/types/database";
 
 function combineDateAndTime(date: Date, time: string | null): Date {
@@ -21,9 +22,10 @@ function combineDateAndTime(date: Date, time: string | null): Date {
 
 export async function getLessonsExportRows() {
   const supabase = await createClient();
-  const [{ data: lessons }, { data: students }] = await Promise.all([
+  const [{ data: lessons }, { data: students }, label] = await Promise.all([
     supabase.from("lessons").select("*").order("date_time", { ascending: false }),
     supabase.from("students").select("id, student_name"),
+    getEntityLabelServer(),
   ]);
 
   const nameById = new Map((students ?? []).map((s) => [s.id, s.student_name]));
@@ -33,7 +35,7 @@ export async function getLessonsExportRows() {
       dateStyle: "short",
       timeStyle: "short",
     }),
-    "תלמיד/ה": nameById.get(lesson.student_id) ?? "לא ידוע",
+    [label.singular]: nameById.get(lesson.student_id) ?? "לא ידוע",
     "משך (דקות)": lesson.duration_minutes,
     "מחיר (ש\"ח)": Number(lesson.price),
     שולם: lesson.is_paid ? "כן" : "לא",
@@ -89,14 +91,13 @@ export async function checkLessonConflict(
   });
 
   if (lessonConflict) {
-    const { data: student } = await supabase
-      .from("students")
-      .select("student_name")
-      .eq("id", lessonConflict.student_id)
-      .single();
+    const [{ data: student }, label] = await Promise.all([
+      supabase.from("students").select("student_name").eq("id", lessonConflict.student_id).single(),
+      getEntityLabelServer(),
+    ]);
 
     return {
-      studentName: student?.student_name ?? "תלמיד/ה אחר/ת",
+      studentName: student?.student_name ?? `${label.singular} אחר/ת`,
       time: new Date(lessonConflict.date_time).toLocaleTimeString("he-IL", {
         hour: "2-digit",
         minute: "2-digit",

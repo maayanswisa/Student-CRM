@@ -1,5 +1,7 @@
 import * as XLSX from "xlsx";
 import type { StudentFormInput } from "@/lib/validation/student";
+import type { ResolvedEntityLabel } from "@/lib/entity-label";
+import type { ResolvedSessionLabel } from "@/lib/session-label";
 
 export type ImportFieldKey =
   | "student_name"
@@ -15,19 +17,39 @@ export type ImportFieldKey =
   | "preferred_learning_time"
   | "notes";
 
-export const IMPORT_FIELDS: { key: ImportFieldKey; label: string; required?: boolean }[] = [
-  { key: "student_name", label: "שם התלמיד/ה", required: true },
-  { key: "mother_name", label: "שם ההורה" },
-  { key: "mother_phone", label: "טלפון ההורה" },
-  { key: "student_phone", label: "טלפון התלמיד/ה" },
-  { key: "address", label: "כתובת" },
-  { key: "grade", label: "כיתה" },
-  { key: "academic_level", label: "רמת לימוד" },
-  { key: "school", label: "בית ספר" },
-  { key: "hourly_rate", label: "מחיר לשיעור" },
-  { key: "preferred_learning_day", label: "ימי לימוד מועדפים" },
-  { key: "preferred_learning_time", label: "שעה מועדפת" },
-  { key: "notes", label: "הערות" },
+export function getImportFields(
+  entityLabel: ResolvedEntityLabel,
+  sessionLabel: ResolvedSessionLabel
+): { key: ImportFieldKey; label: string; required?: boolean }[] {
+  return [
+    { key: "student_name", label: `שם ${entityLabel.singularDefinite}`, required: true },
+    { key: "mother_name", label: "שם ההורה" },
+    { key: "mother_phone", label: "טלפון ההורה" },
+    { key: "student_phone", label: `טלפון ${entityLabel.singularDefinite}` },
+    { key: "address", label: "כתובת" },
+    { key: "grade", label: "כיתה" },
+    { key: "academic_level", label: "רמת לימוד" },
+    { key: "school", label: "בית ספר" },
+    { key: "hourly_rate", label: `מחיר ל${sessionLabel.singular}` },
+    { key: "preferred_learning_day", label: "ימי לימוד מועדפים" },
+    { key: "preferred_learning_time", label: "שעה מועדפת" },
+    { key: "notes", label: "הערות" },
+  ];
+}
+
+const IMPORT_FIELD_KEYS: ImportFieldKey[] = [
+  "student_name",
+  "mother_name",
+  "mother_phone",
+  "student_phone",
+  "address",
+  "grade",
+  "academic_level",
+  "school",
+  "hourly_rate",
+  "preferred_learning_day",
+  "preferred_learning_time",
+  "notes",
 ];
 
 const FIELD_ALIASES: Record<ImportFieldKey, string[]> = {
@@ -97,7 +119,7 @@ export function autoMatchColumns(headers: string[]): Record<ImportFieldKey, stri
   const normalizedHeaders = headers.map((h) => ({ raw: h, normalized: normalize(h) }));
   const mapping = {} as Record<ImportFieldKey, string | null>;
 
-  for (const { key, } of IMPORT_FIELDS) {
+  for (const key of IMPORT_FIELD_KEYS) {
     const aliases = FIELD_ALIASES[key];
     const match = normalizedHeaders.find(({ normalized }) =>
       aliases.some((alias) => normalized === alias || normalized.includes(alias))

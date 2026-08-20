@@ -9,11 +9,14 @@ import { getMonthlyReport, type ReportRow } from "@/actions/reports";
 import { buildCsv, buildXlsxBlob, downloadBlob } from "@/lib/export";
 import { PAYMENT_METHOD_LABELS } from "@/lib/validation/student";
 import { LESSON_STATUS_LABELS } from "@/lib/validation/lesson";
+import { useEntityLabel } from "@/components/providers/entity-label-provider";
+import { useSessionLabel } from "@/components/providers/session-label-provider";
+import type { ResolvedEntityLabel } from "@/lib/entity-label";
 
-function toDisplayRows(rows: ReportRow[]) {
+function toDisplayRows(rows: ReportRow[], label: ResolvedEntityLabel) {
   return rows.map((row) => ({
     תאריך: new Date(row.date).toLocaleDateString("he-IL"),
-    "תלמיד/ה": row.studentName,
+    [label.singular]: row.studentName,
     "מחיר (ש\"ח)": row.price,
     סטטוס: LESSON_STATUS_LABELS[row.status] ?? row.status,
     שולם: row.isPaid ? "כן" : "לא",
@@ -27,6 +30,8 @@ function currentMonth(): string {
 }
 
 export function ReportsClient() {
+  const label = useEntityLabel();
+  const sessionLabel = useSessionLabel();
   const [month, setMonth] = useState(currentMonth());
   const [rows, setRows] = useState<ReportRow[]>([]);
   const [isPending, startTransition] = useTransition();
@@ -42,12 +47,12 @@ export function ReportsClient() {
   const totalUnpaid = rows.filter((r) => !r.isPaid && r.status === "completed").reduce((s, r) => s + r.price, 0);
 
   function exportCsv() {
-    const csv = buildCsv(toDisplayRows(rows));
+    const csv = buildCsv(toDisplayRows(rows, label));
     downloadBlob(new Blob([csv], { type: "text/csv;charset=utf-8" }), `דוח-${month}.csv`);
   }
 
   function exportXlsx() {
-    const blob = buildXlsxBlob(toDisplayRows(rows), "דוח חודשי");
+    const blob = buildXlsxBlob(toDisplayRows(rows, label), "דוח חודשי");
     downloadBlob(blob, `דוח-${month}.xlsx`);
   }
 
@@ -78,7 +83,7 @@ export function ReportsClient() {
       <div className="grid grid-cols-3 gap-3">
         <Card>
           <CardContent>
-            <p className="text-xs text-muted-foreground">שיעורים בחודש</p>
+            <p className="text-xs text-muted-foreground">{sessionLabel.plural} בחודש</p>
             <p className="text-xl font-semibold">{isPending ? "..." : rows.length}</p>
           </CardContent>
         </Card>

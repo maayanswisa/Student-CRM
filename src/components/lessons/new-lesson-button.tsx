@@ -11,9 +11,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { LessonFormDialog } from "./lesson-form";
+import { useEntityLabel } from "@/components/providers/entity-label-provider";
+import { useSessionLabel } from "@/components/providers/session-label-provider";
 import type { Student } from "@/types/database";
 
 export function NewLessonButton({ students }: { students: Student[] }) {
+  const entityLabel = useEntityLabel();
+  const sessionLabel = useSessionLabel();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Student | null>(null);
@@ -26,19 +30,19 @@ export function NewLessonButton({ students }: { students: Student[] }) {
     <>
       <Button onClick={() => setPickerOpen(true)}>
         <Plus className="size-4" />
-        קביעת שיעור
+        קביעת {sessionLabel.singular}
       </Button>
 
       <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>בחירת תלמיד/ה</DialogTitle>
+            <DialogTitle>בחירת {entityLabel.singular}</DialogTitle>
           </DialogHeader>
           <div className="relative">
             <Search className="pointer-events-none absolute right-2.5 top-2.5 size-4 text-muted-foreground" />
             <Input
               autoFocus
-              placeholder="חיפוש תלמיד/ה..."
+              placeholder={`חיפוש ${entityLabel.singular}...`}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pe-8"
@@ -60,7 +64,9 @@ export function NewLessonButton({ students }: { students: Student[] }) {
               </button>
             ))}
             {filtered.length === 0 && (
-              <p className="p-3 text-center text-sm text-muted-foreground">לא נמצאו תלמידים</p>
+              <p className="p-3 text-center text-sm text-muted-foreground">
+                לא נמצאו {entityLabel.plural}
+              </p>
             )}
           </div>
         </DialogContent>

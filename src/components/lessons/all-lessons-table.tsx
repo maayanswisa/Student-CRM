@@ -52,6 +52,8 @@ import { LessonFormDialog } from "./lesson-form";
 import { PAYMENT_METHOD_LABELS } from "@/lib/validation/student";
 import { lessonStatusRowClass, lessonStatusLabel } from "@/lib/lesson-style";
 import { cn } from "@/lib/utils";
+import { useEntityLabel } from "@/components/providers/entity-label-provider";
+import { useSessionLabel } from "@/components/providers/session-label-provider";
 import type { Lesson, LessonStatus, Student } from "@/types/database";
 
 export interface LessonRow extends Lesson {
@@ -67,6 +69,8 @@ const STATUS_VARIANT: Record<LessonStatus, "default" | "secondary" | "outline" |
 
 export function AllLessonsTable({ title, lessons }: { title: string; lessons: LessonRow[] }) {
   const router = useRouter();
+  const entityLabel = useEntityLabel();
+  const sessionLabel = useSessionLabel();
   const [payingLessonId, setPayingLessonId] = useState<string | null>(null);
   const [editingLesson, setEditingLesson] = useState<LessonRow | null>(null);
   const [deletingLesson, setDeletingLesson] = useState<LessonRow | null>(null);
@@ -75,7 +79,9 @@ export function AllLessonsTable({ title, lessons }: { title: string; lessons: Le
   async function complete(lesson: LessonRow) {
     try {
       await markLessonCompleted(lesson.id, lesson.student_id);
-      toast.success("השיעור סומן כהושלם");
+      toast.success(
+        `${sessionLabel.singularDefinite} ${sessionLabel.verb("סומן", "סומנה")} כ${sessionLabel.verb("הושלם", "הושלמה")}`
+      );
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "משהו השתבש");
@@ -85,7 +91,7 @@ export function AllLessonsTable({ title, lessons }: { title: string; lessons: Le
   async function cancel(lesson: LessonRow, timing: "in_time" | "late") {
     try {
       await cancelLesson(lesson.id, lesson.student_id, timing);
-      toast.success("השיעור בוטל");
+      toast.success(`${sessionLabel.singularDefinite} ${sessionLabel.verb("בוטל", "בוטלה")}`);
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "משהו השתבש");
@@ -95,7 +101,7 @@ export function AllLessonsTable({ title, lessons }: { title: string; lessons: Le
   async function remove(lesson: LessonRow) {
     try {
       await deleteLesson(lesson.id, lesson.student_id);
-      toast.success("השיעור נמחק");
+      toast.success(`${sessionLabel.singularDefinite} ${sessionLabel.verb("נמחק", "נמחקה")}`);
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "משהו השתבש");
@@ -113,7 +119,7 @@ export function AllLessonsTable({ title, lessons }: { title: string; lessons: Le
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>תלמיד/ה</TableHead>
+              <TableHead>{entityLabel.singular}</TableHead>
               <TableHead>תאריך</TableHead>
               <TableHead>מחיר</TableHead>
               <TableHead>סטטוס</TableHead>
@@ -155,7 +161,7 @@ export function AllLessonsTable({ title, lessons }: { title: string; lessons: Le
                             variant="ghost"
                             size="icon"
                             className="size-7 text-muted-foreground"
-                            title="יש פתק לשיעור זה"
+                            title={`יש פתק ל${sessionLabel.singular} זה`}
                           >
                             <MessageSquareText className="size-4" />
                           </Button>
@@ -163,7 +169,7 @@ export function AllLessonsTable({ title, lessons }: { title: string; lessons: Le
                       />
                       <PopoverContent>
                         <PopoverHeader>
-                          <PopoverTitle>פתק לשיעור</PopoverTitle>
+                          <PopoverTitle>פתק ל{sessionLabel.singular}</PopoverTitle>
                         </PopoverHeader>
                         <p className="whitespace-pre-wrap text-sm">{lesson.lesson_summary}</p>
                       </PopoverContent>
@@ -213,7 +219,7 @@ export function AllLessonsTable({ title, lessons }: { title: string; lessons: Le
                         onClick={() => setDeletingLesson(lesson)}
                       >
                         <Trash2 className="size-4" />
-                        מחיקת שיעור
+                        מחיקת {sessionLabel.singular}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -227,9 +233,10 @@ export function AllLessonsTable({ title, lessons }: { title: string; lessons: Le
       <AlertDialog open={!!deletingLesson} onOpenChange={(open) => !open && setDeletingLesson(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>למחוק את השיעור?</AlertDialogTitle>
+            <AlertDialogTitle>למחוק את {sessionLabel.singularDefinite}?</AlertDialogTitle>
             <AlertDialogDescription>
-              הפעולה בלתי הפיכה - השיעור יימחק לצמיתות מההיסטוריה.
+              הפעולה בלתי הפיכה - {sessionLabel.singularDefinite}{" "}
+              {sessionLabel.verb("יימחק", "תימחק")} לצמיתות מההיסטוריה.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

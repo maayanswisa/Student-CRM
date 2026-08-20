@@ -5,6 +5,7 @@ import { MessageCircle } from "lucide-react";
 import { buildPaymentReminderLink } from "@/lib/whatsapp";
 import { daysSince, type StudentDebt } from "@/lib/debt";
 import { cn } from "@/lib/utils";
+import { getSessionLabelServer } from "@/lib/session-label-server";
 
 const AGING_THRESHOLD_DAYS = 30;
 
@@ -14,7 +15,8 @@ export interface StudentDebtRow extends StudentDebt {
   motherPhone: string;
 }
 
-export function UnpaidDebtsList({ debts }: { debts: StudentDebtRow[] }) {
+export async function UnpaidDebtsList({ debts }: { debts: StudentDebtRow[] }) {
+  const sessionLabel = await getSessionLabelServer();
   const sorted = [...debts].sort((a, b) => b.totalOwed - a.totalOwed);
 
   return (
@@ -42,7 +44,7 @@ export function UnpaidDebtsList({ debts }: { debts: StudentDebtRow[] }) {
                 {debt.studentName}
               </Link>
               <div className={cn("text-xs", isAging ? "font-medium text-destructive" : "text-muted-foreground")}>
-                {debt.unpaidCount} שיעורים ·{" "}
+                {debt.unpaidCount} {sessionLabel.plural} ·{" "}
                 {debt.oldestUnpaidDate ? `${daysOwed} ימים בחוב` : ""}
                 {isAging && " ⚠ חוב ותיק"}
               </div>
@@ -62,6 +64,7 @@ export function UnpaidDebtsList({ debts }: { debts: StudentDebtRow[] }) {
                       studentName: debt.studentName,
                       unpaidCount: debt.unpaidCount,
                       totalOwed: debt.totalOwed,
+                      sessionLabel,
                     })}
                     target="_blank"
                     rel="noreferrer"

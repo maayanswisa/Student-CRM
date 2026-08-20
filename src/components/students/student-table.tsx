@@ -48,6 +48,7 @@ import { setStudentStatus, reorderStudents } from "@/actions/students";
 import { copyToClipboard } from "@/lib/clipboard";
 import { GRADES, WEEK_DAYS } from "@/lib/validation/student";
 import { cn } from "@/lib/utils";
+import { useEntityLabel } from "@/components/providers/entity-label-provider";
 import type { Student } from "@/types/database";
 
 const GRADE_RANK: Record<string, number> = Object.fromEntries(GRADES.map((g, i) => [g, i]));
@@ -77,6 +78,7 @@ const STATUS_VARIANT: Record<Student["status"], "default" | "secondary" | "outli
 
 export function StudentTable({ students }: { students: Student[] }) {
   const router = useRouter();
+  const entityLabel = useEntityLabel();
   const [editing, setEditing] = useState<Student | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<Student | null>(null);
   const [order, setOrder] = useState<Student[]>(students);
@@ -154,7 +156,11 @@ export function StudentTable({ students }: { students: Student[] }) {
     const nextStatus = student.status === "archived" ? "active" : "archived";
     try {
       await setStudentStatus(student.id, nextStatus);
-      toast.success(nextStatus === "archived" ? "התלמיד/ה הועבר/ה לארכיון" : "התלמיד/ה שוחזר/ה");
+      toast.success(
+        nextStatus === "archived"
+          ? `${entityLabel.singularDefinite} הועבר/ה לארכיון`
+          : `${entityLabel.singularDefinite} שוחזר/ה`
+      );
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "משהו השתבש");
@@ -166,7 +172,7 @@ export function StudentTable({ students }: { students: Student[] }) {
   if (students.length === 0) {
     return (
       <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-        לא נמצאו תלמידים תואמים
+        לא נמצאו {entityLabel.plural} תואמים
       </div>
     );
   }
@@ -178,7 +184,7 @@ export function StudentTable({ students }: { students: Student[] }) {
           <TableHeader>
             <TableRow>
               <TableHead className="w-8" />
-              <TableHead>תלמיד/ה</TableHead>
+              <TableHead>{entityLabel.singular}</TableHead>
               <TableHead className="hidden md:table-cell">
                 <button
                   type="button"
@@ -353,11 +359,13 @@ export function StudentTable({ students }: { students: Student[] }) {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {archiveTarget?.status === "archived" ? "לשחזר את התלמיד/ה?" : "להעביר לארכיון?"}
+              {archiveTarget?.status === "archived"
+                ? `לשחזר את ${entityLabel.singularDefinite}?`
+                : "להעביר לארכיון?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {archiveTarget?.status === "archived"
-                ? `${archiveTarget?.student_name} יחזור/תחזור לרשימת התלמידים הפעילים.`
+                ? `${archiveTarget?.student_name} יחזור/תחזור לרשימת ${entityLabel.pluralDefinite} הפעילים.`
                 : `${archiveTarget?.student_name} יועבר/תועבר לארכיון ולא יוצג/תוצג ברשימת הפעילים.`}
             </AlertDialogDescription>
           </AlertDialogHeader>

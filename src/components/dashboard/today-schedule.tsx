@@ -20,6 +20,7 @@ import { LessonFormDialog } from "@/components/lessons/lesson-form";
 import { copyToClipboard } from "@/lib/clipboard";
 import { lessonStatusRowClass, lessonStatusLabel } from "@/lib/lesson-style";
 import { cn } from "@/lib/utils";
+import { useSessionLabel } from "@/components/providers/session-label-provider";
 import type { Lesson, Student } from "@/types/database";
 
 export interface TodayLessonRow extends Lesson {
@@ -32,6 +33,7 @@ function waLink(phone: string) {
 
 export function TodaySchedule({ lessons }: { lessons: TodayLessonRow[] }) {
   const router = useRouter();
+  const sessionLabel = useSessionLabel();
   const [payingLessonId, setPayingLessonId] = useState<string | null>(null);
   const [editingLesson, setEditingLesson] = useState<TodayLessonRow | null>(null);
   const payingLesson = lessons.find((l) => l.id === payingLessonId);
@@ -39,7 +41,9 @@ export function TodaySchedule({ lessons }: { lessons: TodayLessonRow[] }) {
   async function complete(lesson: TodayLessonRow) {
     try {
       await markLessonCompleted(lesson.id, lesson.student_id);
-      toast.success("השיעור סומן כהושלם");
+      toast.success(
+        `${sessionLabel.singularDefinite} ${sessionLabel.verb("סומן", "סומנה")} כ${sessionLabel.verb("הושלם", "הושלמה")}`
+      );
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "משהו השתבש");
@@ -49,7 +53,7 @@ export function TodaySchedule({ lessons }: { lessons: TodayLessonRow[] }) {
   async function cancel(lesson: TodayLessonRow, timing: "in_time" | "late") {
     try {
       await cancelLesson(lesson.id, lesson.student_id, timing);
-      toast.success("השיעור בוטל");
+      toast.success(`${sessionLabel.singularDefinite} ${sessionLabel.verb("בוטל", "בוטלה")}`);
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "משהו השתבש");
@@ -80,11 +84,13 @@ export function TodaySchedule({ lessons }: { lessons: TodayLessonRow[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">שיעורים היום</CardTitle>
+        <CardTitle className="text-base">{sessionLabel.plural} היום</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
         {lessons.length === 0 && (
-          <p className="text-sm text-muted-foreground">אין שיעורים מתוכננים להיום</p>
+          <p className="text-sm text-muted-foreground">
+            אין {sessionLabel.plural} מתוכננים להיום
+          </p>
         )}
         {lessons.map((lesson) => (
           <div

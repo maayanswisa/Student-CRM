@@ -1,6 +1,7 @@
 "use client";
 
-import { User, LogOut } from "lucide-react";
+import Link from "next/link";
+import { User, LogOut, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -28,6 +29,11 @@ export function UserMenu({ email }: { email: string }) {
         >
           {email}
         </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem render={<Link href="/settings" />}>
+          <Settings className="size-4" />
+          הגדרות
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" onClick={() => logout()}>
           <LogOut className="size-4" />

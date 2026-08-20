@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const studentSchema = z.object({
-  student_name: z.string().trim().min(1, "שם התלמיד/ה נדרש"),
+  student_name: z.string().trim().min(1, "שם מלא נדרש"),
   mother_name: z.string().trim().optional().or(z.literal("")),
   student_phone: z.string().trim().optional().or(z.literal("")),
   mother_phone: z.string().trim().optional().or(z.literal("")),
@@ -14,7 +14,7 @@ export const studentSchema = z.object({
   academic_level: z.string().trim().optional().or(z.literal("")),
   school: z.string().trim().optional().or(z.literal("")),
   hourly_rate: z.coerce.number().min(0, "מחיר לא יכול להיות שלילי"),
-  default_lesson_duration_minutes: z.coerce.number().min(15, "משך השיעור חייב להיות לפחות 15 דקות"),
+  default_lesson_duration_minutes: z.coerce.number().min(15, "משך הזמן חייב להיות לפחות 15 דקות"),
   preferred_learning_day: z.array(z.string()),
   preferred_learning_time: z.string().trim().optional().or(z.literal("")),
   status: z.enum(["active", "paused", "archived"]),

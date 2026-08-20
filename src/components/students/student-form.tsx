@@ -50,6 +50,8 @@ import {
   WEEK_DAYS,
 } from "@/lib/validation/student";
 import { createStudent, updateStudent, checkScheduleConflict, type ScheduleConflict } from "@/actions/students";
+import { useEntityLabel } from "@/components/providers/entity-label-provider";
+import { useSessionLabel } from "@/components/providers/session-label-provider";
 import type { Student } from "@/types/database";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -140,6 +142,8 @@ export function StudentFormDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const router = useRouter();
+  const entityLabel = useEntityLabel();
+  const sessionLabel = useSessionLabel();
   const [submitting, setSubmitting] = useState(false);
   const [conflict, setConflict] = useState<ScheduleConflict | null>(null);
   const [pendingValues, setPendingValues] = useState<StudentFormValues | null>(null);
@@ -185,10 +189,10 @@ export function StudentFormDialog({
     try {
       if (student) {
         await updateStudent(student.id, values);
-        toast.success("פרטי התלמיד/ה עודכנו");
+        toast.success(`פרטי ${entityLabel.singularDefinite} עודכנו`);
       } else {
         await createStudent(values);
-        toast.success("התלמיד/ה נוסף/ה בהצלחה");
+        toast.success(`${entityLabel.singularDefinite} נוסף/ה בהצלחה`);
         reset(emptyValues);
       }
       onOpenChange(false);
@@ -212,13 +216,15 @@ export function StudentFormDialog({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-h-[90vh] max-w-lg overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{student ? "עריכת תלמיד/ה" : "תלמיד/ה חדש/ה"}</DialogTitle>
+            <DialogTitle>
+              {student ? `עריכת ${entityLabel.singular}` : `${entityLabel.singular} חדש/ה`}
+            </DialogTitle>
           </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit, onInvalid)}>
           <FieldGroup>
             <div className="grid grid-cols-2 gap-3">
               <Field>
-                <FieldLabel htmlFor="student_name">שם התלמיד/ה</FieldLabel>
+                <FieldLabel htmlFor="student_name">שם {entityLabel.singularDefinite}</FieldLabel>
                 <Input id="student_name" {...register("student_name")} />
                 {errors.student_name && <FieldError>{errors.student_name.message}</FieldError>}
               </Field>
@@ -230,7 +236,7 @@ export function StudentFormDialog({
 
             <div className="grid grid-cols-2 gap-3">
               <Field>
-                <FieldLabel htmlFor="student_phone">טלפון התלמיד/ה</FieldLabel>
+                <FieldLabel htmlFor="student_phone">טלפון {entityLabel.singularDefinite}</FieldLabel>
                 <Input id="student_phone" {...register("student_phone")} />
               </Field>
               <Field>
@@ -316,12 +322,14 @@ export function StudentFormDialog({
 
             <div className="grid grid-cols-2 gap-3">
               <Field>
-                <FieldLabel htmlFor="hourly_rate">מחיר לשיעור (ש&quot;ח)</FieldLabel>
+                <FieldLabel htmlFor="hourly_rate">מחיר ל{sessionLabel.singular} (ש&quot;ח)</FieldLabel>
                 <Input id="hourly_rate" type="number" step="0.5" {...register("hourly_rate")} />
                 {errors.hourly_rate && <FieldError>{errors.hourly_rate.message}</FieldError>}
               </Field>
               <Field>
-                <FieldLabel htmlFor="default_lesson_duration_minutes">משך שיעור (דקות)</FieldLabel>
+                <FieldLabel htmlFor="default_lesson_duration_minutes">
+                  משך {sessionLabel.singular} (דקות)
+                </FieldLabel>
                 <Input
                   id="default_lesson_duration_minutes"
                   type="number"
@@ -446,7 +454,8 @@ export function StudentFormDialog({
           <AlertDialogHeader>
             <AlertDialogTitle>יש התנגשות בזמנים</AlertDialogTitle>
             <AlertDialogDescription>
-              כבר יש תלמיד/ה ({conflict?.studentName}) עם יום {conflict?.day} בשעה {conflict?.time}{" "}
+              כבר יש {entityLabel.singular} ({conflict?.studentName}) עם יום {conflict?.day} בשעה{" "}
+              {conflict?.time}{" "}
               שחופף למה שבחרת. לשמור בכל זאת?
             </AlertDialogDescription>
           </AlertDialogHeader>

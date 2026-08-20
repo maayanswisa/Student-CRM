@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { buildMonthlyStatementLink } from "@/lib/whatsapp";
+import { useSessionLabel } from "@/components/providers/session-label-provider";
 import type { Lesson } from "@/types/database";
 
 function currentMonth(): string {
@@ -35,6 +36,7 @@ export function MonthlyStatementDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const sessionLabel = useSessionLabel();
   const [month, setMonth] = useState(currentMonth());
 
   const monthLessons = useMemo(() => {
@@ -67,6 +69,7 @@ export function MonthlyStatementDialog({
     monthLabel,
     lessons: monthLessons,
     totalOwed,
+    sessionLabel,
   });
 
   return (
@@ -85,7 +88,9 @@ export function MonthlyStatementDialog({
           />
         </Field>
         <div className="rounded-lg border p-3 text-sm">
-          <p className="mb-1 font-medium">{monthLessons.length} שיעורים שהושלמו ב{monthLabel}</p>
+          <p className="mb-1 font-medium">
+            {monthLessons.length} {sessionLabel.plural} שהושלמו ב{monthLabel}
+          </p>
           <p className="text-muted-foreground">סה&quot;כ יתרה לתשלום: {totalOwed.toFixed(2)} ש&quot;ח</p>
         </div>
         <DialogFooter>

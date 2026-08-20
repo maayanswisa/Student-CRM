@@ -7,6 +7,8 @@ import {
   type StudentFormValues,
   type StudentFormInput,
 } from "@/lib/validation/student";
+import { getEntityLabelServer } from "@/lib/entity-label-server";
+import { getSessionLabelServer } from "@/lib/session-label-server";
 import type { StudentStatus } from "@/types/database";
 
 const STATUS_LABELS: Record<StudentStatus, string> = {
@@ -70,9 +72,11 @@ export async function checkScheduleConflict(
 
 export async function getStudentsExportRows() {
   const supabase = await createClient();
-  const [{ data: students }, { data: lessons }] = await Promise.all([
+  const [{ data: students }, { data: lessons }, label, sessionLabel] = await Promise.all([
     supabase.from("students").select("*").order("student_name"),
     supabase.from("lessons").select("student_id, status, is_paid, price"),
+    getEntityLabelServer(),
+    getSessionLabelServer(),
   ]);
 
   const debtByStudent = new Map<string, number>();
@@ -86,15 +90,15 @@ export async function getStudentsExportRows() {
   }
 
   return (students ?? []).map((s) => ({
-    "שם התלמיד/ה": s.student_name,
+    [`שם ${label.singularDefinite}`]: s.student_name,
     "שם ההורה": s.mother_name,
     "טלפון ההורה": s.mother_phone,
-    "טלפון התלמיד/ה": s.student_phone ?? "",
+    [`טלפון ${label.singularDefinite}`]: s.student_phone ?? "",
     כתובת: s.address,
     כיתה: s.grade,
     "רמת לימוד": s.academic_level,
     "בית ספר": s.school,
-    "מחיר לשיעור (ש\"ח)": s.hourly_rate,
+    [`מחיר ל${sessionLabel.singular} (ש"ח)`]: s.hourly_rate,
     "ימי לימוד מועדפים": s.preferred_learning_day.join(", "),
     "שעה מועדפת": s.preferred_learning_time ?? "",
     סטטוס: STATUS_LABELS[s.status] ?? s.status,
