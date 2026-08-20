@@ -3,8 +3,21 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { lessonSchema, type LessonFormValues } from "@/lib/validation/lesson";
-import { PAYMENT_METHOD_LABELS } from "@/lib/validation/student";
+import { PAYMENT_METHOD_LABELS, WEEK_DAYS } from "@/lib/validation/student";
 import type { PaymentMethod } from "@/types/database";
+
+function combineDateAndTime(date: Date, time: string | null): Date {
+  const d = new Date(date);
+  if (time) {
+    const [h, m] = time.split(":").map(Number);
+    if (!Number.isNaN(h)) {
+      d.setHours(h, Number.isNaN(m) ? 0 : m, 0, 0);
+      return d;
+    }
+  }
+  d.setHours(12, 0, 0, 0);
+  return d;
+}
 
 export async function getLessonsExportRows() {
   const supabase = await createClient();
@@ -46,10 +59,12 @@ export interface LessonConflict {
 export async function checkLessonConflict(
   dateTime: string,
   durationMinutes: number,
-  excludeLessonId?: string
+  excludeLessonId?: string,
+  forStudentId?: string
 ): Promise<LessonConflict | null> {
   const supabase = await createClient();
-  const start = new Date(dateTime).getTime();
+  const target = new Date(dateTime);
+  const start = target.getTime();
   const end = start + durationMinutes * 60000;
 
   const dayStart = new Date(dateTime);
@@ -57,13 +72,15 @@ export async function checkLessonConflict(
   const dayEnd = new Date(dateTime);
   dayEnd.setHours(23, 59, 59, 999);
 
-  const { data: dayLessons } = await supabase
+  const { data: dayLessons, error: lessonsError } = await supabase
     .from("lessons")
     .select("id, student_id, date_time, duration_minutes, status")
     .gte("date_time", dayStart.toISOString())
     .lte("date_time", dayEnd.toISOString());
 
-  const conflict = (dayLessons ?? []).find((lesson) => {
+  if (lessonsError) throw new Error(lessonsError.message);
+
+  const lessonConflict = (dayLessons ?? []).find((lesson) => {
     if (lesson.id === excludeLessonId) return false;
     if (lesson.status === "cancelled_in_time" || lesson.status === "cancelled_late") return false;
     const lStart = new Date(lesson.date_time).getTime();
@@ -71,20 +88,48 @@ export async function checkLessonConflict(
     return lStart < end && lEnd > start;
   });
 
-  if (!conflict) return null;
+  if (lessonConflict) {
+    const { data: student } = await supabase
+      .from("students")
+      .select("student_name")
+      .eq("id", lessonConflict.student_id)
+      .single();
 
-  const { data: student } = await supabase
+    return {
+      studentName: student?.student_name ?? "תלמיד/ה אחר/ת",
+      time: new Date(lessonConflict.date_time).toLocaleTimeString("he-IL", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    };
+  }
+
+  // Also check recurring weekly-schedule slots that don't have a real lesson row
+  // yet (shown as dashed placeholders in the calendar) - they still occupy time.
+  const scheduledStudentIds = new Set((dayLessons ?? []).map((l) => l.student_id));
+  const dayLetter = WEEK_DAYS[target.getDay()];
+
+  const { data: recurringStudents, error: studentsError } = await supabase
     .from("students")
-    .select("student_name")
-    .eq("id", conflict.student_id)
-    .single();
+    .select("id, student_name, preferred_learning_day, preferred_learning_time, default_lesson_duration_minutes")
+    .eq("status", "active")
+    .contains("preferred_learning_day", [dayLetter]);
+
+  if (studentsError) throw new Error(studentsError.message);
+
+  const recurringConflict = (recurringStudents ?? []).find((s) => {
+    if (s.id === forStudentId) return false;
+    if (scheduledStudentIds.has(s.id)) return false;
+    const rStart = combineDateAndTime(target, s.preferred_learning_time).getTime();
+    const rEnd = rStart + s.default_lesson_duration_minutes * 60000;
+    return rStart < end && rEnd > start;
+  });
+
+  if (!recurringConflict) return null;
 
   return {
-    studentName: student?.student_name ?? "תלמיד/ה אחר/ת",
-    time: new Date(conflict.date_time).toLocaleTimeString("he-IL", {
-      hour: "2-digit",
-      minute: "2-digit",
-    }),
+    studentName: recurringConflict.student_name,
+    time: recurringConflict.preferred_learning_time ?? "לפי מערכת שעות",
   };
 }
 

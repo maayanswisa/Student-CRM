@@ -222,7 +222,12 @@ export function LessonCalendar({
     setBusyKey(key);
     try {
       const dateIso = combineDateAndTime(date, student.preferred_learning_time).toISOString();
-      const found = await checkLessonConflict(dateIso, student.default_lesson_duration_minutes);
+      const found = await checkLessonConflict(
+        dateIso,
+        student.default_lesson_duration_minutes,
+        undefined,
+        student.id
+      );
       if (found) {
         setRecurringConflict({ student, date, status, conflict: found });
         return;
@@ -316,7 +321,9 @@ export function LessonCalendar({
           item.type === "recurring"
             ? checkLessonConflict(
                 combineDateAndTime(item.date, item.student.preferred_learning_time).toISOString(),
-                item.student.default_lesson_duration_minutes
+                item.student.default_lesson_duration_minutes,
+                undefined,
+                item.student.id
               )
             : Promise.resolve(null)
         )

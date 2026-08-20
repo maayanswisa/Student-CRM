@@ -91,7 +91,7 @@ export function LessonFormDialog({
     setSubmitting(true);
     try {
       const isoDateTime = new Date(values.date_time).toISOString();
-      const found = await checkLessonConflict(isoDateTime, values.duration_minutes, lesson?.id);
+      const found = await checkLessonConflict(isoDateTime, values.duration_minutes, lesson?.id, studentId);
       if (found) {
         setConflict(found);
         setPendingSave({ values, isoDateTime });
