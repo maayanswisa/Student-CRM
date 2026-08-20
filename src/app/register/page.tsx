@@ -16,7 +16,7 @@ export default function RegisterPage() {
           <CardHeader>
             <CardTitle className="text-xl">הרשמה</CardTitle>
             <CardDescription>
-              הצטרפו עכשיו והתחילו לנהל את התלמידים שלכם בקלות
+              הצטרפו עכשיו והתחילו לנהל את הלקוחות שלכם בקלות
             </CardDescription>
           </CardHeader>
           <CardContent>

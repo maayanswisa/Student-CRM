@@ -16,8 +16,8 @@ export default function LoginPage() {
           <CardHeader>
             <CardTitle className="text-xl">כניסה למערכת</CardTitle>
             <CardDescription>
-              שמחים לראות אתכם שוב! התחברו כדי להמשיך לנהל את התלמידים,
-              השיעורים והתשלומים שלכם
+              שמחים לראות אתכם שוב! התחברו כדי להמשיך לנהל את הלקוחות,
+              הפגישות והתשלומים שלכם
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -1,9 +1,9 @@
 import {
   BarChart3,
+  Briefcase,
   CalendarClock,
   CalendarDays,
   FileSpreadsheet,
-  GraduationCap,
   ListFilter,
   MessageCircle,
   ReceiptText,
@@ -14,13 +14,13 @@ import {
 const features = [
   {
     icon: Users,
-    title: "ניהול תלמידים",
-    description: "כל הפרטים, השיעורים וההתקדמות של כל תלמיד/ה במקום אחד.",
+    title: "ניהול לקוחות",
+    description: "כל הפרטים, הפגישות וההתקדמות של כל לקוח/ה במקום אחד.",
   },
   {
     icon: CalendarClock,
-    title: "יומן שיעורים חכם",
-    description: "מעקב אחר שיעורים היום, השבוע והחודש בלי להתבלבל.",
+    title: "יומן פגישות חכם",
+    description: "מעקב אחר פגישות היום, השבוע והחודש בלי להתבלבל.",
   },
   {
     icon: ReceiptText,
@@ -36,8 +36,8 @@ const previewLessons = [
 
 const previewStudents = [
   { initials: "מ", name: "מעיין", subject: "מתמטיקה" },
-  { initials: "נ", name: "נועה", subject: "אנגלית" },
-  { initials: "ת", name: "תומר", subject: "פיזיקה" },
+  { initials: "נ", name: "נועה", subject: "ייעוץ זוגי" },
+  { initials: "ת", name: "תומר", subject: "טיפול רגשי" },
 ];
 
 const previewDebts = [
@@ -46,12 +46,12 @@ const previewDebts = [
 ];
 
 const moreCapabilities = [
-  { icon: FileSpreadsheet, label: "ייבוא וייצוא תלמידים (Excel/CSV)" },
-  { icon: ListFilter, label: "סינון וחיפוש מהיר לפי כיתה וסטטוס" },
+  { icon: FileSpreadsheet, label: "ייבוא וייצוא לקוחות (Excel/CSV)" },
+  { icon: ListFilter, label: "סינון וחיפוש מהיר לפי סטטוס וקטגוריה" },
   { icon: MessageCircle, label: "תזכורות ועדכונים אוטומטיים בוואטסאפ" },
-  { icon: TrendingUp, label: "מעקב ציונים ומגמות התקדמות" },
+  { icon: TrendingUp, label: "מעקב התקדמות לאורך זמן" },
   { icon: BarChart3, label: "דוחות חודשיים מפורטים עם ייצוא" },
-  { icon: CalendarDays, label: "מערכת שעות שבועית מלאה" },
+  { icon: CalendarDays, label: "יומן שבועי וחודשי מלא" },
 ];
 
 function MockupWindow({
@@ -89,18 +89,19 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
         <div className="flex w-full max-w-2xl flex-col items-center gap-10">
           <div className="flex items-center gap-2">
             <div className="flex size-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur">
-              <GraduationCap className="size-5" />
+              <Briefcase className="size-5" />
             </div>
-            <span className="text-lg font-semibold">CRM למורים פרטיים</span>
+            <span className="text-lg font-semibold">My CRM</span>
           </div>
 
           <div className="flex flex-col items-center gap-3">
             <h1 className="text-2xl font-bold leading-tight sm:text-4xl">
-              כל התלמידים, השיעורים והתשלומים - במקום אחד מסודר
+              כל הלקוחות, הפגישות והתשלומים - במקום אחד מסודר
             </h1>
             <p className="max-w-lg text-sm leading-relaxed text-white/70 sm:text-base">
-              מערכת ה-CRM שנבנתה במיוחד עבור מורים ומורות פרטיים, כדי לחסוך
-              לכם זמן ולתת שליטה מלאה על העסק - בלי בלגן של אקסלים ופתקים.
+              מערכת ה-CRM שנבנתה במיוחד עבור בעלי ובעלות מקצוע עצמאיים - מורים,
+              מטפלים, יועצים ועוד - כדי לחסוך לכם זמן ולתת שליטה מלאה על העסק -
+              בלי בלגן של אקסלים ופתקים.
             </p>
           </div>
 
@@ -127,7 +128,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
             <MockupWindow title="לוח בקרה">
               <div className="grid grid-cols-2 gap-2">
                 <div className="rounded-lg bg-white/10 p-3">
-                  <p className="text-xs text-white/50">תלמידים פעילים</p>
+                  <p className="text-xs text-white/50">לקוחות פעילים</p>
                   <p className="text-xl font-bold">15</p>
                 </div>
                 <div className="rounded-lg bg-white/10 p-3">
@@ -151,7 +152,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
               </div>
             </MockupWindow>
 
-            <MockupWindow title="ניהול תלמידים">
+            <MockupWindow title="ניהול לקוחות">
               <div className="flex flex-col gap-2">
                 {previewStudents.map((s) => (
                   <div

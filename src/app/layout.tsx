@@ -10,8 +10,8 @@ const rubik = Rubik({
 });
 
 export const metadata: Metadata = {
-  title: "CRM למורים פרטיים",
-  description: "ניהול תלמידים, שיעורים וגבייה",
+  title: "My CRM",
+  description: "ניהול לקוחות, פגישות וגבייה",
 };
 
 export default function RootLayout({
