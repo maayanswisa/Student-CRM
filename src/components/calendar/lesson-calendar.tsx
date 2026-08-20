@@ -66,7 +66,7 @@ import { WEEK_DAYS } from "@/lib/validation/student";
 import type { LessonWithStudent, Student } from "@/types/database";
 
 function wazeUrl(address: string): string {
-  return `https://www.waze.com/ul?q=${encodeURIComponent(address)}&navigate=yes`;
+  return `waze://?q=${encodeURIComponent(address)}&navigate=yes`;
 }
 
 const WEEKDAY_LABELS = ["א", "ב", "ג", "ד", "ה", "ו", "ש"];
