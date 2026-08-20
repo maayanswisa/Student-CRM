@@ -17,6 +17,10 @@ export type Student = {
   student_phone: string | null;
   mother_phone: string;
   address: string;
+  entrance: string | null;
+  entry_code: string | null;
+  floor: string | null;
+  apartment_number: string | null;
   grade: string;
   academic_level: string;
   school: string;
@@ -48,7 +52,16 @@ export type Lesson = {
 export type LessonWithStudent = Lesson & {
   student: Pick<
     Student,
-    "id" | "student_name" | "mother_phone" | "student_phone" | "hourly_rate" | "address"
+    | "id"
+    | "student_name"
+    | "mother_phone"
+    | "student_phone"
+    | "hourly_rate"
+    | "address"
+    | "entrance"
+    | "entry_code"
+    | "floor"
+    | "apartment_number"
   >;
 };
 
@@ -81,6 +94,10 @@ export type Database = {
           student_phone?: string | null;
           mother_phone: string;
           address: string;
+          entrance?: string | null;
+          entry_code?: string | null;
+          floor?: string | null;
+          apartment_number?: string | null;
           grade: string;
           academic_level: string;
           school: string;
@@ -100,6 +117,10 @@ export type Database = {
           student_phone?: string | null;
           mother_phone?: string;
           address?: string;
+          entrance?: string | null;
+          entry_code?: string | null;
+          floor?: string | null;
+          apartment_number?: string | null;
           grade?: string;
           academic_level?: string;
           school?: string;

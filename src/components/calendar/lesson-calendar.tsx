@@ -63,6 +63,7 @@ import {
   type LessonConflict,
 } from "@/actions/lessons";
 import { WEEK_DAYS } from "@/lib/validation/student";
+import { addressDetails } from "@/lib/address";
 import type { LessonWithStudent, Student } from "@/types/database";
 
 function wazeUrl(address: string): string {
@@ -455,15 +456,20 @@ export function LessonCalendar({
                 )}
               </div>
               {lesson.student.address && (
-                <a
-                  href={wazeUrl(lesson.student.address)}
-                  dir="auto"
-                  title={`${lesson.student.address} (פתיחה בוויז)`}
-                  className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
-                >
-                  <MapPin className="size-3" />
-                  {lesson.student.address}
-                </a>
+                <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs">
+                  <a
+                    href={wazeUrl(lesson.student.address)}
+                    dir="auto"
+                    title={`${lesson.student.address} (פתיחה בוויז)`}
+                    className="flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline"
+                  >
+                    <MapPin className="size-3" />
+                    {lesson.student.address}
+                  </a>
+                  {addressDetails(lesson.student) && (
+                    <span className="text-muted-foreground">({addressDetails(lesson.student)})</span>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -526,15 +532,18 @@ export function LessonCalendar({
               <span className="text-xs font-normal">(לפי מערכת שעות שבועית)</span>
             </div>
             {student.address && (
-              <a
-                href={wazeUrl(student.address)}
-                dir="auto"
-                title={`${student.address} (פתיחה בוויז)`}
-                className="mt-0.5 flex items-center gap-1 text-xs hover:text-foreground hover:underline"
-              >
-                <MapPin className="size-3" />
-                {student.address}
-              </a>
+              <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs">
+                <a
+                  href={wazeUrl(student.address)}
+                  dir="auto"
+                  title={`${student.address} (פתיחה בוויז)`}
+                  className="flex items-center gap-1 hover:text-foreground hover:underline"
+                >
+                  <MapPin className="size-3" />
+                  {student.address}
+                </a>
+                {addressDetails(student) && <span>({addressDetails(student)})</span>}
+              </div>
             )}
           </div>
         </div>

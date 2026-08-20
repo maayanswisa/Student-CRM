@@ -27,6 +27,10 @@ export default async function CalendarPage() {
               student_phone: student.student_phone,
               hourly_rate: student.hourly_rate,
               address: student.address,
+              entrance: student.entrance,
+              entry_code: student.entry_code,
+              floor: student.floor,
+              apartment_number: student.apartment_number,
             },
           },
         ]

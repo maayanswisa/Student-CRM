@@ -90,6 +90,10 @@ const emptyValues: StudentFormInput = {
   student_phone: "",
   mother_phone: "",
   address: "",
+  entrance: "",
+  entry_code: "",
+  floor: "",
+  apartment_number: "",
   grade: GRADES[0],
   academic_level: "",
   school: "",
@@ -109,6 +113,10 @@ function studentToValues(student: Student): StudentFormInput {
     student_phone: student.student_phone ?? "",
     mother_phone: student.mother_phone,
     address: student.address,
+    entrance: student.entrance ?? "",
+    entry_code: student.entry_code ?? "",
+    floor: student.floor ?? "",
+    apartment_number: student.apartment_number ?? "",
     grade: student.grade,
     academic_level: student.academic_level,
     school: student.school,
@@ -233,8 +241,27 @@ export function StudentFormDialog({
 
             <Field>
               <FieldLabel htmlFor="address">כתובת</FieldLabel>
-              <Input id="address" {...register("address")} />
+              <Input id="address" placeholder="רק הרחוב והמספר - כדי שוויז יזהה את הכתובת" {...register("address")} />
             </Field>
+
+            <div className="grid grid-cols-4 gap-3">
+              <Field>
+                <FieldLabel htmlFor="entrance">כניסה</FieldLabel>
+                <Input id="entrance" {...register("entrance")} />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="floor">קומה</FieldLabel>
+                <Input id="floor" {...register("floor")} />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="apartment_number">דירה</FieldLabel>
+                <Input id="apartment_number" {...register("apartment_number")} />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="entry_code">קוד</FieldLabel>
+                <Input id="entry_code" {...register("entry_code")} />
+              </Field>
+            </div>
 
             <div className="grid grid-cols-3 gap-3">
               <Field>
