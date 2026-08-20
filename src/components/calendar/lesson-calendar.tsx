@@ -66,7 +66,7 @@ import { WEEK_DAYS } from "@/lib/validation/student";
 import type { LessonWithStudent, Student } from "@/types/database";
 
 function wazeUrl(address: string): string {
-  return `https://waze.com/ul?q=${encodeURIComponent(address)}&navigate=yes`;
+  return `https://www.waze.com/ul?q=${encodeURIComponent(address)}&navigate=yes`;
 }
 
 const WEEKDAY_LABELS = ["א", "ב", "ג", "ד", "ה", "ו", "ש"];
@@ -457,8 +457,6 @@ export function LessonCalendar({
               {lesson.student.address && (
                 <a
                   href={wazeUrl(lesson.student.address)}
-                  target="_blank"
-                  rel="noreferrer"
                   dir="auto"
                   title={`${lesson.student.address} (פתיחה בוויז)`}
                   className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
@@ -530,8 +528,6 @@ export function LessonCalendar({
             {student.address && (
               <a
                 href={wazeUrl(student.address)}
-                target="_blank"
-                rel="noreferrer"
                 dir="auto"
                 title={`${student.address} (פתיחה בוויז)`}
                 className="mt-0.5 flex items-center gap-1 text-xs hover:text-foreground hover:underline"
